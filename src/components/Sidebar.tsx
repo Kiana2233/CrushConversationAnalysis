@@ -26,9 +26,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside className="w-14 h-screen bg-[#e9e9ea] border-r border-[#dcdcdc] flex flex-col items-center py-4 justify-between shrink-0 select-none">
       {/* Top Icons */}
       <div className="flex flex-col items-center gap-5">
-        {/* User Mini Avatar / Status */}
-        <div className="w-9 h-9 rounded bg-[#d0d0d2] text-[#4a4a4a] text-xs font-semibold flex items-center justify-center shadow-xs">
-          略
+        {/* App Brand Logo */}
+        <div
+          title="WeChat AI 恋爱僚机工作台"
+          className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 via-[#07c160] to-teal-600 flex items-center justify-center text-white shadow-xs select-none hover:scale-105 transition-transform"
+        >
+          <Heart className="w-4 h-4 fill-white text-white" />
         </div>
 
         {/* Chat Tab / Session List Toggle */}
