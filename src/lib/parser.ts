@@ -215,3 +215,29 @@ export function mergeMessagesWithDeduplication(
     addedCount: uniqueNewMessages.length,
   };
 }
+
+/**
+ * 安全提取用户头像字符（支持 Emoji、多字节字符、藏文特殊修饰符）
+ * 彻底防止 JavaScript 原生 .slice() 切断代理对 (Surrogate Pairs) 导致的菱形乱码问号 ()
+ */
+export function getAvatarInitial(name: string, maxGraphemes: number = 1): string {
+  if (!name || !name.trim()) return "?";
+  const trimmed = name.trim();
+
+  // 现代浏览器支持的标准字素分割（Grapheme Cluster）
+  if (typeof Intl !== "undefined" && (Intl as any).Segmenter) {
+    try {
+      const segmenter = new (Intl as any).Segmenter("zh", { granularity: "grapheme" });
+      const segments = Array.from(segmenter.segment(trimmed)) as Array<{ segment: string }>;
+      if (segments.length > 0) {
+        return segments.slice(0, maxGraphemes).map((s) => s.segment).join("");
+      }
+    } catch {
+      // 降级使用 Array.from
+    }
+  }
+
+  // 降级方案：Array.from 避免拆散基础 Emoji 代理对
+  return Array.from(trimmed).slice(0, maxGraphemes).join("");
+}
+

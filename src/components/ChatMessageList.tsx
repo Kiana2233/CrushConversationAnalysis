@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from "react";
 import { Message } from "@/types/chat";
 import { Sparkles, Info, HelpCircle } from "lucide-react";
+import { getAvatarInitial } from "@/lib/parser";
 
 interface ChatMessageListProps {
   messages: Message[];
@@ -63,9 +64,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         const isMe = msg.isMe;
         const initial = isMe
           ? "我"
-          : crushName
-          ? crushName.slice(0, 1).toUpperCase()
-          : "V";
+          : getAvatarInitial(crushName || msg.sender || "对方", 1).toUpperCase();
 
         return (
           <div key={msg.id || index} className="space-y-3">

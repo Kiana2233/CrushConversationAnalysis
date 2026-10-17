@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Plus, ChevronRight, Sparkles, Heart, ArrowLeftRight } from "lucide-react";
 import { OverallAnalysis } from "@/types/chat";
+import { getAvatarInitial } from "@/lib/parser";
 
 interface HeaderProps {
   crushName: string;
@@ -44,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
     return "bg-slate-400";
   };
 
-  const initialLetter = crushName ? crushName.slice(0, 2) : "CR";
+  const initialLetter = crushName ? getAvatarInitial(crushName, 1).toUpperCase() : "CR";
 
   return (
     <header className="h-16 bg-[#f7f7f8] border-b border-[#e5e5e7] px-4 md:px-6 flex items-center justify-between shrink-0 select-none">
