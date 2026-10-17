@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  serverExternalPackages: ["better-sqlite3"],
   turbopack: {
     rules: {
       "*.css": {
