@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { analyzeChatHistory } from "@/lib/ai-analyzer";
-import { Message, ModelConfig } from "@/types/chat";
+import { analyzeChatHistory, generateSmartHeuristicAnalysis } from "@/lib/ai-analyzer";
+import { Message } from "@/types/chat";
 
 export async function POST(req: NextRequest) {
+  let messages: Message[] = [];
   try {
     const body = await req.json();
-    const { messages }: { messages: Message[] } = body;
+    messages = body?.messages || [];
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json(
@@ -14,18 +15,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const overallAnalysis = await analyzeChatHistory(messages);
+    const result = await analyzeChatHistory(messages);
 
     return NextResponse.json({
       success: true,
-      overallAnalysis,
+      isFallback: result.isFallback,
+      source: result.source,
+      reason: result.reason,
+      overallAnalysis: result.overallAnalysis,
       messages,
     });
   } catch (error: any) {
-    console.error("API error in /api/analyze:", error);
-    return NextResponse.json(
-      { error: error?.message || "分析处理失败，请稍后重试" },
-      { status: 500 }
-    );
+    console.error("Critical error in /api/analyze:", error);
+    // 即使发生未知严重异常，也立即执行本地启发式分析兜底，确保前端永远不会卡死
+    const fallbackOverall = generateSmartHeuristicAnalysis(messages);
+    return NextResponse.json({
+      success: true,
+      isFallback: true,
+      source: "heuristic",
+      reason: "服务异常，已启用内置高精度本地引擎兜底",
+      overallAnalysis: fallbackOverall,
+      messages,
+    });
   }
 }

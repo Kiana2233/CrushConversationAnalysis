@@ -1,27 +1,50 @@
 import { Message, OverallAnalysis, ModelConfig } from "@/types/chat";
 
+export interface AnalysisExecutionResult {
+  overallAnalysis: OverallAnalysis;
+  isFallback: boolean;
+  source: "deepseek" | "heuristic";
+  reason?: string;
+}
+
+/**
+ * 核心分析方法：优先调用 DeepSeek 等兼容大模型，遭遇异常或超时时无缝使用本地推导引擎兜底
+ */
 export async function analyzeChatHistory(
   messages: Message[]
-): Promise<OverallAnalysis> {
-  // 统一通过后端 .env 环境变量读取，前端不涉及任何 Key
-  const apiKey =
+): Promise<AnalysisExecutionResult> {
+  // 统一通过后端环境变量读取，去除两端不可见空白
+  const apiKey = (
     process.env.AI_API_KEY ||
     process.env.DEEPSEEK_API_KEY ||
     process.env.OPENAI_API_KEY ||
-    "";
+    ""
+  ).trim();
+
   const baseUrl = (
     process.env.AI_BASE_URL ||
     process.env.OPENAI_BASE_URL ||
-    "https://api.deepseek.com/v1"
+    "https://api.deepseek.com"
   ).replace(/\/+$/, "");
-  const model = process.env.AI_MODEL || "deepseek-chat";
 
-  // 如果没有在 .env 配置任何 API Key，使用内置的高精度智能推导分析器
+  const model = (process.env.AI_MODEL || "deepseek-chat").trim();
+
+  // 1. 无 Key 兜底策略：未配置 API Key 时自动启用本地高精度引擎
   if (!apiKey) {
-    return generateSmartHeuristicAnalysis(messages);
+    console.info("[AI Analyzer] 未检测到 API Key，自动启用内置高精度本地引擎");
+    return {
+      overallAnalysis: generateSmartHeuristicAnalysis(messages),
+      isFallback: true,
+      source: "heuristic",
+      reason: "未配置 API Key，已自动使用内置高精度本地引擎研判",
+    };
   }
 
   const prompt = buildAnalysisPrompt(messages);
+
+  // 2. 超时熔断保护：25秒自动 abort，防止大模型请求长久挂起导致前端一直在“分析中”
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
 
   try {
     const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -30,6 +53,7 @@ export async function analyzeChatHistory(
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
+      signal: controller.signal,
       body: JSON.stringify({
         model,
         messages: [
@@ -48,26 +72,61 @@ export async function analyzeChatHistory(
       }),
     });
 
+    clearTimeout(timeoutId);
+
+    // 3. HTTP 错误码细分兜底策略 (401 / 402 / 429 / 5xx)
     if (!response.ok) {
-      const errText = await response.text();
-      console.warn("AI API request failed, falling back to smart heuristic:", errText);
-      return generateSmartHeuristicAnalysis(messages);
+      const errText = await response.text().catch(() => "");
+      let reason = `API 响应状态码 ${response.status}`;
+      if (response.status === 401) reason = "API Key 无效或未授权 (401)";
+      else if (response.status === 402) reason = "DeepSeek 账户余额不足 (402)";
+      else if (response.status === 429) reason = "调用过于频繁，触发限流保护 (429)";
+      else if (response.status >= 500) reason = "DeepSeek 官方服务器暂时繁忙 (5xx)";
+
+      console.warn(`[AI Analyzer] API 调用失败 [${reason}]，自动降级至内置引擎:`, errText);
+      return {
+        overallAnalysis: generateSmartHeuristicAnalysis(messages),
+        isFallback: true,
+        source: "heuristic",
+        reason,
+      };
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
     if (!content) {
-      return generateSmartHeuristicAnalysis(messages);
+      console.warn("[AI Analyzer] API 返回内容为空，已使用内置引擎兜底");
+      return {
+        overallAnalysis: generateSmartHeuristicAnalysis(messages),
+        isFallback: true,
+        source: "heuristic",
+        reason: "模型返回内容为空",
+      };
     }
 
     // 清理可能的 markdown 代码块标记
     const cleaned = content.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
     const parsed = JSON.parse(cleaned);
 
-    return formatAiResult(parsed, messages);
-  } catch (err) {
-    console.error("AI analysis error:", err);
-    return generateSmartHeuristicAnalysis(messages);
+    return {
+      overallAnalysis: formatAiResult(parsed, messages),
+      isFallback: false,
+      source: "deepseek",
+    };
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    const isTimeout = err?.name === "AbortError" || err?.message?.includes("aborted");
+    const reason = isTimeout
+      ? "DeepSeek 响应超过 25 秒超时，已自动切换本地推导"
+      : `网络或接口异常 (${err?.message || "未知原因"})`;
+
+    console.error("[AI Analyzer] 请求异常，自动无缝切换本地推导兜底:", err);
+    return {
+      overallAnalysis: generateSmartHeuristicAnalysis(messages),
+      isFallback: true,
+      source: "heuristic",
+      reason,
+    };
   }
 }
 
@@ -88,7 +147,7 @@ ${formattedChat}
 2. 分析【我方】目前的表现发挥评分（0到100整数）、发挥总结及存在的问题。
 3. 给出下一步最明智、高情商的战略行动指引（nextStepAdvice）。
 4. 针对对方最近的一两句发言，量身生成 3 条不同风格的【参考回复选项】（含：幽默推拉/共情调侃/制造好奇/以退为进等），并附带心理学机理分析。
-5. 针对聊天中每一条消息（以 messageId 对应），分析其“情绪（emotion，3-6字）”、“意图/潜台词（intent，4-10字）”以及“深度解析（subtext）”。
+5. 针对聊天中每一条消息（以 messageIndex 对应），分析其“情绪（emotion，3-6字）”、“意图/潜台词（intent，4-10字）”以及“深度解析（subtext）”。
 
 请严格按以下 JSON 字段结构返回：
 {
@@ -135,7 +194,7 @@ function formatAiResult(parsed: any, messages: Message[]): OverallAnalysis {
       : [],
   };
 
-  // 回填单句分析
+  // 回填 AI 产出的单句分析
   if (Array.isArray(parsed.messageAnalyses)) {
     parsed.messageAnalyses.forEach((item: any) => {
       const idx = item.messageIndex;
@@ -150,7 +209,52 @@ function formatAiResult(parsed: any, messages: Message[]): OverallAnalysis {
     });
   }
 
+  // 兜底补齐：未被 AI 覆盖到的消息使用启发式规则补充，杜绝界面出现空缺或永久“分析中”
+  messages.forEach((m) => {
+    if (!m.analysis || (!m.analysis.emotion && !m.isMe) || (!m.analysis.feedback && m.isMe)) {
+      populateSingleMessageHeuristic(m);
+    }
+  });
+
   return result;
+}
+
+/**
+ * 针对单条消息的启发式心理学特征填充
+ */
+export function populateSingleMessageHeuristic(m: Message): void {
+  if (!m.isMe) {
+    if (/王者|游戏|在干嘛|打|吃|看/.test(m.content)) {
+      m.analysis = {
+        emotion: "放松 / 坦白",
+        intent: "主动报备日程",
+        subtext: "毫无戒备地分享当下动态，属于高意愿延续对话的信号。",
+      };
+    } else if (/小学生|被坑|吐槽|累|烦/.test(m.content)) {
+      m.analysis = {
+        emotion: "撒娇 / 寻求认同",
+        intent: "情绪宣泄与共鸣",
+        subtext: "向你展示脆弱与负面情绪，希望获得你的接纳与情绪支持。",
+      };
+    } else if (/\[.+?\]|[哈嘻嘿]/.test(m.content)) {
+      m.analysis = {
+        emotion: "愉悦 / 破冰",
+        intent: "调节沟通氛围",
+        subtext: "使用表情包烘托轻松氛围，避免话题冷场。",
+      };
+    } else {
+      m.analysis = {
+        emotion: "平和 / 倾听",
+        intent: "反馈互动",
+        subtext: "常规回应，等待进一步话题引导。",
+      };
+    }
+  } else {
+    m.analysis = {
+      feedback: m.content.length > 20 ? "信息量充分，但略显主动" : "简练自然，接梗迅速",
+      subtext: "抛出话题或给出反馈，给对方留出回击空间。",
+    };
+  }
 }
 
 /**
@@ -167,7 +271,6 @@ export function generateSmartHeuristicAnalysis(messages: Message[]): OverallAnal
     /\[.+?\]|[哈嘻嘿😄😊🤣🤔❤️✨🌹]/.test(m.content)
   ).length;
 
-  const consecutiveCrushBursts = crushMessages.length >= myMessages.length ? 1 : 0;
   const questionCount = crushMessages.filter((m) => /[？?嘛呢吧么]/.test(m.content)).length;
 
   // 动态好感度模型 (基础分 65)
@@ -183,43 +286,10 @@ export function generateSmartHeuristicAnalysis(messages: Message[]): OverallAnal
   else if (score >= 70) stage = "好感试探中";
   else if (score <= 50) stage = "礼貌距离期";
 
-  // 单条消息分析回填
+  // 全量单条消息补齐分析
   messages.forEach((m) => {
-    if (!m.analysis) {
-      if (!m.isMe) {
-        // 对方消息
-        if (/王者|游戏|在干嘛|打|吃|看/.test(m.content)) {
-          m.analysis = {
-            emotion: "放松 / 坦白",
-            intent: "主动报备日程",
-            subtext: "毫无戒备地分享当下动态，属于高意愿延续对话的信号。",
-          };
-        } else if (/小学生|被坑|吐槽|累|烦/.test(m.content)) {
-          m.analysis = {
-            emotion: "撒娇 / 寻求认同",
-            intent: "情绪宣泄与共鸣",
-            subtext: "向你展示脆弱与负面情绪，希望获得你的接纳与情绪支持。",
-          };
-        } else if (/\[.+?\]|[哈嘻嘿]/.test(m.content)) {
-          m.analysis = {
-            emotion: "愉悦 / 破冰",
-            intent: "调节沟通氛围",
-            subtext: "使用表情包烘托轻松氛围，避免话题冷场。",
-          };
-        } else {
-          m.analysis = {
-            emotion: "平和 / 倾听",
-            intent: "反馈互动",
-            subtext: "常规回应，等待进一步话题引导。",
-          };
-        }
-      } else {
-        // 我方消息
-        m.analysis = {
-          feedback: m.content.length > 20 ? "信息量充分，但略显主动" : "简练自然，接梗迅速",
-          subtext: "抛出话题或给出反馈，给对方留出回击空间。",
-        };
-      }
+    if (!m.analysis || (!m.analysis.emotion && !m.isMe) || (!m.analysis.feedback && m.isMe)) {
+      populateSingleMessageHeuristic(m);
     }
   });
 

@@ -191,7 +191,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                           <span className="text-amber-500 animate-pulse">分析中...</span>
                         ) : (
                           <span className="text-gray-600 font-medium">
-                            {msg.analysis?.emotion || "分析中"}
+                            {msg.analysis?.emotion || "友好互动"}
                           </span>
                         )}
                       </div>
@@ -204,7 +204,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                           <span className="text-amber-500 animate-pulse">分析中...</span>
                         ) : (
                           <span className="text-gray-600 font-medium">
-                            {msg.analysis?.intent || "分析中"}
+                            {msg.analysis?.intent || "日常交流"}
                           </span>
                         )}
                       </div>
@@ -216,7 +216,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                         <span className="text-amber-500 animate-pulse">分析中...</span>
                       ) : (
                         <span>
-                          {msg.analysis?.feedback || "分析中"}
+                          {msg.analysis?.feedback || "表达自然平稳"}
                         </span>
                       )}
                     </div>

@@ -159,16 +159,17 @@ export default function Home() {
           }),
         });
 
-        if (!res.ok) {
-          throw new Error("分析接口请求失败");
-        }
-
         const data = await res.json();
         if (data.overallAnalysis) {
           setOverallAnalysis(data.overallAnalysis);
           const finalMessages = Array.isArray(data.messages) ? data.messages : messagesToAnalyze;
           setMessages(finalMessages);
-          showToast("AI 研判完成：好感度已实时更新！");
+
+          if (data.isFallback) {
+            showToast(`已完成研判（${data.reason || "已启用内置智能引擎兜底"}）`);
+          } else {
+            showToast("DeepSeek AI 研判完成：好感度已实时更新！");
+          }
 
           // 同步自动持久化到 SQLite
           persistSession({
