@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, UserCheck, Shield, Check, Heart, Server } from "lucide-react";
+import { X, UserCheck, Shield, Check, Heart } from "lucide-react";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -121,17 +121,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <option value="Crush / 忽冷忽热">Crush / 忽冷忽热</option>
               <option value="普通朋友 / 试探边界">普通朋友 / 试探边界</option>
             </select>
-          </div>
-
-          {/* 3. 后端环境管理卡片说明 */}
-          <div className="p-3.5 bg-blue-50/50 rounded-xl border border-blue-100 space-y-1.5 text-blue-950">
-            <div className="flex items-center gap-1.5 font-semibold text-blue-900">
-              <Server className="w-3.5 h-3.5 text-blue-600" />
-              <span>大模型由后端 `.env` 统一管控</span>
-            </div>
-            <p className="text-[11px] text-blue-800 leading-relaxed">
-              API Key 与模型接口均已从前端移除，由项目根目录的 <code className="px-1 py-0.5 bg-blue-100 rounded text-blue-900 font-mono text-[10px]">.env</code> 文件在服务端安全读取，无需在页面重复输入。
-            </p>
           </div>
         </div>
 
