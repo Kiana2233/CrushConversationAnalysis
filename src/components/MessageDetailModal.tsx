@@ -1,19 +1,21 @@
 "use client";
 
 import React from "react";
-import { X, Sparkles, MessageCircle, Heart } from "lucide-react";
+import { X, Sparkles, MessageCircle, Heart, Trash2 } from "lucide-react";
 import { Message } from "@/types/chat";
 
 interface MessageDetailModalProps {
   message: Message | null;
   onClose: () => void;
   crushName: string;
+  onDeleteMessage?: (id: string) => void;
 }
 
 export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
   message,
   onClose,
   crushName,
+  onDeleteMessage,
 }) => {
   if (!message) return null;
 
@@ -101,6 +103,32 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
               )}
             </div>
           )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-5 py-3 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between">
+          {onDeleteMessage ? (
+            <button
+              onClick={() => {
+                onDeleteMessage(message.id);
+                onClose();
+              }}
+              className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors font-medium"
+              title="从当前会话中移除此条消息"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>删除此条记录</span>
+            </button>
+          ) : (
+            <div />
+          )}
+
+          <button
+            onClick={onClose}
+            className="text-xs bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-3.5 py-1.5 rounded-lg transition-colors font-medium shadow-2xs"
+          >
+            关闭
+          </button>
         </div>
       </div>
     </div>

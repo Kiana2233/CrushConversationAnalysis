@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, ChevronRight, Sparkles, Heart, ArrowLeftRight } from "lucide-react";
+import { Plus, ChevronRight, Sparkles, Heart, ArrowLeftRight, ListChecks } from "lucide-react";
 import { OverallAnalysis } from "@/types/chat";
 import { getAvatarInitial } from "@/lib/parser";
 
@@ -16,6 +16,9 @@ interface HeaderProps {
   onChangeCrushName: (name: string) => void;
   onChangeStatus: (status: string) => void;
   onSwapRoles: () => void;
+  hasMessages?: boolean;
+  isSelectionMode?: boolean;
+  onToggleSelectionMode?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -29,6 +32,9 @@ export const Header: React.FC<HeaderProps> = ({
   onChangeCrushName,
   onChangeStatus,
   onSwapRoles,
+  hasMessages = false,
+  isSelectionMode = false,
+  onToggleSelectionMode,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(crushName);
@@ -174,7 +180,22 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
+        {hasMessages && onToggleSelectionMode && (
+          <button
+            onClick={onToggleSelectionMode}
+            className={`px-2.5 h-8 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+              isSelectionMode
+                ? "bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs"
+                : "text-[#55565a] hover:bg-[#eaeaec] hover:text-[#1c1c1e]"
+            }`}
+            title={isSelectionMode ? "退出管理模式" : "批量管理 / 删除对话"}
+          >
+            <ListChecks className="w-4 h-4 text-emerald-600" />
+            <span className="hidden sm:inline">{isSelectionMode ? "退出管理" : "管理"}</span>
+          </button>
+        )}
+
         <button
           onClick={onOpenPasteModal}
           className="w-8 h-8 rounded-md flex items-center justify-center text-[#3a3a3c] hover:bg-[#eaeaec] hover:text-[#1c1c1e] transition-colors"

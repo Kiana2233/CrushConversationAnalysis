@@ -21,7 +21,11 @@ export default function Home() {
   const [relationshipStatus, setRelationshipStatus] = useState<string>("Crush / 暧昧升温中");
   const [overallAnalysis, setOverallAnalysis] = useState<OverallAnalysis | undefined>(undefined);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
-  const [notification, setNotification] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ message: string; onUndo?: () => void } | null>(null);
+
+  // 批量选择/删除管理模式
+  const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
 
   // 多会话管理状态 (基于 SQLite)
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
@@ -58,12 +62,16 @@ export default function Home() {
     };
   }, [currentSessionId, crushName, myName, relationshipStatus, messages, overallAnalysis]);
 
-  // 自动弹出提示
-  const showToast = useCallback((msg: string) => {
-    setNotification(msg);
-    setTimeout(() => {
-      setNotification((prev) => (prev === msg ? null : prev));
-    }, 3000);
+  // 自动弹出提示（支持可选撤销操作）
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const showToast = useCallback((msg: string, onUndo?: () => void) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    setNotification({ message: msg, onUndo });
+    toastTimerRef.current = setTimeout(() => {
+      setNotification(null);
+    }, onUndo ? 6000 : 3000);
   }, []);
 
   // 1. 从 SQLite 加载历史会话列表
@@ -258,6 +266,8 @@ export default function Home() {
         setRelationshipStatus(session.relationshipStatus || "Crush / 暧昧中");
         setOverallAnalysis(session.overallAnalysis);
         setParticipants([session.myName, session.crushName].filter(Boolean));
+        setIsSelectionMode(false);
+        setSelectedMessageIds([]);
         showToast(`已载入历史会话：${session.title}`);
       }
     } catch (e) {
@@ -275,6 +285,8 @@ export default function Home() {
     setRelationshipStatus("Crush / 暧昧升温中");
     setOverallAnalysis(undefined);
     setParticipants([]);
+    setIsSelectionMode(false);
+    setSelectedMessageIds([]);
     showToast("已开启新会话，按 Ctrl+V 导入微信记录即可自动归档");
   };
 
@@ -333,6 +345,156 @@ export default function Home() {
     });
 
     runAnalysis(updatedMessages, newCrushName, newMyName);
+  };
+
+  // 单条消息删除（支持撤销）
+  const handleDeleteMessage = useCallback(
+    (id: string) => {
+      const targetIndex = messages.findIndex((m) => m.id === id);
+      if (targetIndex === -1) return;
+
+      const deletedMsg = messages[targetIndex];
+      const remaining = messages.filter((m) => m.id !== id);
+      setMessages(remaining);
+      setSelectedMessageIds((prev) => prev.filter((i) => i !== id));
+
+      const willBeEmpty = remaining.length === 0;
+      if (willBeEmpty) {
+        setOverallAnalysis(undefined);
+        setIsSelectionMode(false);
+      }
+
+      persistSession({
+        messages: remaining,
+        crushName,
+        myName,
+        relationshipStatus,
+        overallAnalysis: willBeEmpty ? undefined : overallAnalysis,
+      });
+
+      const handleUndo = () => {
+        const restored = [...remaining];
+        restored.splice(targetIndex, 0, deletedMsg);
+        setMessages(restored);
+        persistSession({
+          messages: restored,
+          crushName,
+          myName,
+          relationshipStatus,
+          overallAnalysis,
+        });
+        showToast("已撤销删除");
+      };
+
+      showToast("已删除 1 条对话记录", handleUndo);
+    },
+    [messages, crushName, myName, relationshipStatus, overallAnalysis, persistSession, showToast]
+  );
+
+  // 批量删除选中的消息（支持撤销）
+  const handleBatchDelete = useCallback(
+    (ids: string[]) => {
+      if (ids.length === 0) return;
+
+      const idSet = new Set(ids);
+      const originalMessages = [...messages];
+      const remaining = messages.filter((m) => !idSet.has(m.id));
+
+      setMessages(remaining);
+      setSelectedMessageIds([]);
+      setIsSelectionMode(false);
+
+      const willBeEmpty = remaining.length === 0;
+      if (willBeEmpty) {
+        setOverallAnalysis(undefined);
+      }
+
+      persistSession({
+        messages: remaining,
+        crushName,
+        myName,
+        relationshipStatus,
+        overallAnalysis: willBeEmpty ? undefined : overallAnalysis,
+      });
+
+      const handleUndo = () => {
+        setMessages(originalMessages);
+        persistSession({
+          messages: originalMessages,
+          crushName,
+          myName,
+          relationshipStatus,
+          overallAnalysis,
+        });
+        showToast(`已撤销删除，已恢复 ${ids.length} 条对话`);
+      };
+
+      showToast(`已删除 ${ids.length} 条对话记录`, handleUndo);
+    },
+    [messages, crushName, myName, relationshipStatus, overallAnalysis, persistSession, showToast]
+  );
+
+  // 清空当前会话全部聊天记录（支持撤销）
+  const handleClearAllMessages = useCallback(() => {
+    if (messages.length === 0) return;
+    if (!window.confirm("确定清空当前会话的所有聊天记录吗？此操作可撤销。")) {
+      return;
+    }
+
+    const originalMessages = [...messages];
+    const prevAnalysis = overallAnalysis;
+
+    setMessages([]);
+    setOverallAnalysis(undefined);
+    setSelectedMessageIds([]);
+    setIsSelectionMode(false);
+
+    persistSession({
+      messages: [],
+      crushName,
+      myName,
+      relationshipStatus,
+      overallAnalysis: undefined,
+    });
+
+    const handleUndo = () => {
+      setMessages(originalMessages);
+      setOverallAnalysis(prevAnalysis);
+      persistSession({
+        messages: originalMessages,
+        crushName,
+        myName,
+        relationshipStatus,
+        overallAnalysis: prevAnalysis,
+      });
+      showToast("已恢复所有聊天记录");
+    };
+
+    showToast("已清空当前会话的所有聊天记录", handleUndo);
+  }, [messages, crushName, myName, relationshipStatus, overallAnalysis, persistSession, showToast]);
+
+  // 管理模式下的选择切换
+  const handleToggleSelectMessage = (id: string) => {
+    setSelectedMessageIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllMessages = () => {
+    setSelectedMessageIds(messages.map((m) => m.id));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedMessageIds([]);
+  };
+
+  const handleToggleSelectionMode = () => {
+    setIsSelectionMode((prev) => {
+      if (prev) {
+        setSelectedMessageIds([]);
+      }
+      return !prev;
+    });
   };
 
   // 全局监听快捷键 Ctrl + V 粘贴
@@ -419,10 +581,22 @@ export default function Home() {
 
       {/* 主工作区 */}
       <main className="flex-1 flex flex-col h-full bg-[#f7f7f8] relative overflow-hidden">
-        {/* 全局 Toast 通知 */}
+        {/* 全局 Toast 通知（支持撤销） */}
         {notification && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-[#1c1c1e]/90 backdrop-blur-md text-white text-xs px-4 py-2 rounded-full shadow-lg border border-white/10 animate-in fade-in slide-in-from-top-2 duration-200">
-            {notification}
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-[#1c1c1e]/95 backdrop-blur-md text-white text-xs px-4 py-2 rounded-full shadow-lg border border-white/10 animate-in fade-in slide-in-from-top-2 duration-200 flex items-center gap-3 select-none">
+            <span>{notification.message}</span>
+            {notification.onUndo && (
+              <button
+                type="button"
+                onClick={() => {
+                  notification.onUndo?.();
+                  setNotification(null);
+                }}
+                className="text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+              >
+                撤销
+              </button>
+            )}
           </div>
         )}
 
@@ -438,14 +612,29 @@ export default function Home() {
           onChangeCrushName={setCrushName}
           onChangeStatus={setRelationshipStatus}
           onSwapRoles={handleSwapRoles}
+          hasMessages={messages.length > 0}
+          isSelectionMode={isSelectionMode}
+          onToggleSelectionMode={handleToggleSelectionMode}
         />
 
-        {/* 聊天消息流：仿原生微信气泡、居中时间戳、微观意图情绪解析 */}
+        {/* 聊天消息流：仿原生微信气泡、居中时间戳、微观意图情绪解析、单条/批量删除 */}
         <ChatMessageList
           messages={messages}
           crushName={crushName}
           isAnalyzing={isAnalyzing}
           onSelectMessageDetail={(msg) => setSelectedMessage(msg)}
+          onDeleteMessage={handleDeleteMessage}
+          isSelectionMode={isSelectionMode}
+          selectedMessageIds={selectedMessageIds}
+          onToggleSelectMessage={handleToggleSelectMessage}
+          onSelectAll={handleSelectAllMessages}
+          onClearSelection={handleClearSelection}
+          onBatchDelete={handleBatchDelete}
+          onExitSelectionMode={() => {
+            setIsSelectionMode(false);
+            setSelectedMessageIds([]);
+          }}
+          onClearAllMessages={handleClearAllMessages}
         />
 
         {/* 底部输入与状态栏：我的发挥、下一步行动、参考回复卡片一键复制、无感粘贴框 */}
@@ -500,6 +689,7 @@ export default function Home() {
         message={selectedMessage}
         onClose={() => setSelectedMessage(null)}
         crushName={crushName}
+        onDeleteMessage={handleDeleteMessage}
       />
     </div>
   );
