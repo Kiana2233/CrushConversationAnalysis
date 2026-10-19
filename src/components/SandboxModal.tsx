@@ -100,8 +100,9 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
   const presets = [
     { label: "坦白回“没听过/不知道”", text: "没听过，演什么的？" },
     { label: "装作自己也很懂", text: "我也超喜欢这个！我全都知道！" },
-    { label: "高情商借力打力·求安利", text: "真没接触过诶！但刚才看到你提就特意去搜了一下，感觉好抓人，你最推荐我从哪里入坑呀？" },
-    { label: "幽默调侃推拉", text: "坦白从宽，你平时背着我都藏了多少宝藏好物？赶紧交出清单！" },
+    { label: "巧妙给台阶·抛借口", text: "刚好这周末路过那边/朋友爽约多留了张票，看你之前聊过，赏脸一起探探？" },
+    { label: "真诚借力打力·求安利", text: "真没接触过诶！但刚才看到你提就特意去搜了一下，感觉好抓人，你最推荐我从哪里入坑呀？" },
+    { label: "高姿态幽默推拉", text: "坦白从宽，你平时背着我都藏了多少宝藏好物？赶紧交出清单！" },
   ];
 
   const assessment = analysis?.draftAssessment;
@@ -299,7 +300,7 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
 
                 {/* 战术点评 */}
                 <p className="text-[11px] text-gray-500 leading-relaxed pt-1.5 border-t border-gray-100">
-                  💡 <strong className="text-gray-700 font-medium">战术点评：</strong>
+                  💡 <strong className="text-gray-700 font-medium">实战对局点评：</strong>
                   {assessment.diagnosis}
                 </p>
               </div>
@@ -310,9 +311,9 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-gray-800 flex items-center gap-1.5 text-xs">
                       <Sparkles className="w-3.5 h-3.5 text-[#105e46]" />
-                      <span>高情商战术润色建议（点击一键复制发微信）</span>
+                      <span>高情商实战润色建议（点击一键复制发微信）</span>
                     </span>
-                    <span className="text-[10px] text-gray-400 font-normal">绝不装懂 · 借力打力</span>
+                    <span className="text-[10px] text-gray-400 font-normal">给足台阶 · 吸引力&gt;讨好 · 绝不装懂</span>
                   </div>
 
                   <div className="space-y-2">
