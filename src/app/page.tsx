@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import { ChatMessageList } from "@/components/ChatMessageList";
 import { FooterBar } from "@/components/FooterBar";
 import { SettingsModal } from "@/components/SettingsModal";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { PasteModal } from "@/components/PasteModal";
 import { AnalysisDetailDrawer } from "@/components/AnalysisDetailDrawer";
 import { MessageDetailModal } from "@/components/MessageDetailModal";
@@ -40,6 +41,7 @@ export default function Home() {
 
   // 弹窗状态
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSwapConfirmOpen, setIsSwapConfirmOpen] = useState(false);
   const [isPasteOpen, setIsPasteOpen] = useState(false);
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
   const [isSandboxOpen, setIsSandboxOpen] = useState(false);
@@ -154,9 +156,17 @@ export default function Home() {
   );
 
   // 3. 触发 AI 分析（完成后自动更新到 SQLite）
+  // 分析互斥锁：同一时刻只允许一个大模型请求在飞行中，防止连续点击反复打满接口
+  const isAnalyzingRef = useRef(false);
+
   const runAnalysis = useCallback(
     async (messagesToAnalyze: Message[], targetCrushName?: string, targetMyName?: string) => {
       if (messagesToAnalyze.length === 0) return;
+      if (isAnalyzingRef.current) {
+        showToast("研判任务进行中，请等待当前结果返回后再试");
+        return;
+      }
+      isAnalyzingRef.current = true;
       setIsAnalyzing(true);
 
       const activeCrush = targetCrushName ?? stateRef.current.crushName;
@@ -197,6 +207,7 @@ export default function Home() {
         console.error("Analysis failed:", err);
         showToast("在线分析遇到轻微波动，已采用本地智能推导演算");
       } finally {
+        isAnalyzingRef.current = false;
         setIsAnalyzing(false);
       }
     },
@@ -341,6 +352,11 @@ export default function Home() {
   const handleUpdateRoles = useCallback(
     (newMy: string, newCrush: string) => {
       if (!newMy || !newCrush) return;
+      // 研判结果尚未回来时禁止切换身份，避免角色归属与报告视角错位
+      if (isAnalyzingRef.current) {
+        showToast("研判结果尚未返回，身份切换已暂缓，请稍候再试");
+        return;
+      }
       const oldMy = myName;
       const oldCrush = crushName;
 
@@ -398,8 +414,15 @@ export default function Home() {
     [messages, myName, crushName, relationshipStatus, overallAnalysis, persistSession, runAnalysis, showToast]
   );
 
-  // 一键对调身份
+  // 一键对调身份（先二次确认；确认后自动重新研判，结果返回前不可再次对调）
   const handleSwapRoles = useCallback(() => {
+    if (!myName || !crushName) return;
+    if (isAnalyzingRef.current) return;
+    setIsSwapConfirmOpen(true);
+  }, [myName, crushName]);
+
+  const handleConfirmSwapRoles = useCallback(() => {
+    setIsSwapConfirmOpen(false);
     handleUpdateRoles(crushName, myName);
   }, [handleUpdateRoles, crushName, myName]);
 
@@ -799,8 +822,19 @@ export default function Home() {
         myName={myName}
         crushName={crushName}
         relationshipStatus={relationshipStatus}
+        isAnalyzing={isAnalyzing}
         onUpdateRoles={handleUpdateRoles}
         onChangeStatus={setRelationshipStatus}
+      />
+
+      {/* 弹窗：对调身份二次确认 */}
+      <ConfirmModal
+        isOpen={isSwapConfirmOpen}
+        title="确认对调身份？"
+        description={`将把我方【${myName || "我"}】与对方【${crushName || "对方"}】互换，并以新视角自动重新研判。研判结果返回前，对调按钮会暂时锁定，请勿重复点击。`}
+        confirmText="确认对调"
+        onConfirm={handleConfirmSwapRoles}
+        onCancel={() => setIsSwapConfirmOpen(false)}
       />
 
       {/* 抽屉：好感度深度全维研判报告与数据罗盘 */}
