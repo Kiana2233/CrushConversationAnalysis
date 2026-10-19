@@ -55,6 +55,32 @@ export interface OverallAnalysis {
   keywords?: KeywordCloudItem[];
 }
 
+export interface ContextProbe {
+  term: string;           // 识别出的小众专有名词/影视/歌手/梗
+  category: string;       // 类别 (音乐/影视/动漫/游戏/潮流爱好/生活方式)
+  summary: string;        // 30字极简速览 (核心气质、代表作)
+  resonanceHook: string;  // 破冰切入点 (为什么粉丝喜欢，怎么顺水推舟聊)
+}
+
+export interface PolishedReply {
+  type: string;           // 借力打力·安利法 / 幽默推拉 / 情绪共鸣 / 以退为进
+  text: string;           // 润色回复
+  rationale: string;      // 为什么这样回能赢的心理学机理
+}
+
+export interface SandboxAnalysis {
+  contextProbe?: ContextProbe;
+  draftAssessment: {
+    continuationRate: number; // 积极回应/话题延续概率 0 - 100
+    riskLevel: "safe" | "warning" | "danger";
+    riskTag: string;          // 风险标签 (e.g. 话题终结者 / 查户口感 / 过于被动 / 装懂风险 / 表现得体)
+    crushInnerThought: string;// Crush 看到这句草稿的心理潜台词
+    predictedReply: string;   // Crush 大概率会回复的一句话
+    diagnosis: string;        // 心理学战术点评
+  };
+  polishedReplies: PolishedReply[];
+}
+
 export interface ModelConfig {
   apiKey: string;
   baseUrl: string;

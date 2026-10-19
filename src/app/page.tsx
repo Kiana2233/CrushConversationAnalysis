@@ -10,6 +10,7 @@ import { SettingsModal } from "@/components/SettingsModal";
 import { PasteModal } from "@/components/PasteModal";
 import { AnalysisDetailDrawer } from "@/components/AnalysisDetailDrawer";
 import { MessageDetailModal } from "@/components/MessageDetailModal";
+import { SandboxModal } from "@/components/SandboxModal";
 import { Message, OverallAnalysis, SessionSummary, ChatSession } from "@/types/chat";
 import { parseWechatClipboard, mergeMessagesWithDeduplication } from "@/lib/parser";
 import { ChatScenario } from "@/lib/sample-data";
@@ -36,7 +37,14 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPasteOpen, setIsPasteOpen] = useState(false);
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
+  const [isSandboxOpen, setIsSandboxOpen] = useState(false);
+  const [sandboxInitialDraft, setSandboxInitialDraft] = useState("");
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+
+  const handleOpenSandbox = useCallback((draft?: string) => {
+    setSandboxInitialDraft(draft || "");
+    setIsSandboxOpen(true);
+  }, []);
 
   // 参与者推导列表
   const [participants, setParticipants] = useState<string[]>([]);
@@ -716,6 +724,7 @@ export default function Home() {
           isAnalyzing={isAnalyzing}
           onPasteText={handleImportText}
           onAnalyze={() => runAnalysis(messages)}
+          onOpenSandbox={handleOpenSandbox}
           hasMessages={messages.length > 0}
         />
       </main>
@@ -758,6 +767,17 @@ export default function Home() {
         onClose={() => setSelectedMessage(null)}
         crushName={crushName}
         onDeleteMessage={handleDeleteMessage}
+      />
+
+      {/* 弹窗：回复沙盒实战推演器 */}
+      <SandboxModal
+        isOpen={isSandboxOpen}
+        onClose={() => setIsSandboxOpen(false)}
+        messages={messages}
+        crushName={crushName}
+        myName={myName}
+        relationshipStatus={relationshipStatus}
+        initialDraft={sandboxInitialDraft}
       />
     </div>
   );

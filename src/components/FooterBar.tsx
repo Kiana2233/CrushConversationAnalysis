@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Copy, Check, Sparkles, Send, ArrowUpRight } from "lucide-react";
+import { Copy, Check, Sparkles, Send, ArrowUpRight, FlaskConical } from "lucide-react";
 import { OverallAnalysis, SuggestedReply } from "@/types/chat";
 
 interface FooterBarProps {
@@ -9,6 +9,7 @@ interface FooterBarProps {
   isAnalyzing: boolean;
   onPasteText: (text: string) => void;
   onAnalyze: () => void;
+  onOpenSandbox?: (initialDraft?: string) => void;
   hasMessages: boolean;
 }
 
@@ -17,6 +18,7 @@ export const FooterBar: React.FC<FooterBarProps> = ({
   isAnalyzing,
   onPasteText,
   onAnalyze,
+  onOpenSandbox,
   hasMessages,
 }) => {
   const [inputText, setInputText] = useState("");
@@ -65,16 +67,29 @@ export const FooterBar: React.FC<FooterBarProps> = ({
           </div>
         </div>
 
-        {hasMessages && (
-          <button
-            onClick={onAnalyze}
-            disabled={isAnalyzing}
-            className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition-colors"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{isAnalyzing ? "分析中..." : "重新研判"}</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {hasMessages && onOpenSandbox && (
+            <button
+              onClick={() => onOpenSandbox()}
+              className="text-[11px] font-medium text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200/90 px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
+              title="在回复前模拟推演对方心理反应与战术润色"
+            >
+              <FlaskConical className="w-3 h-3 text-purple-600" />
+              <span>沙盒演练</span>
+            </button>
+          )}
+
+          {hasMessages && (
+            <button
+              onClick={onAnalyze}
+              disabled={isAnalyzing}
+              className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{isAnalyzing ? "分析中..." : "重新研判"}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 2. 僚机参考回复推荐卡片 (点击一键复制，去微信回复) */}
@@ -153,18 +168,32 @@ export const FooterBar: React.FC<FooterBarProps> = ({
         <div className="flex items-center justify-between px-3.5 pb-2 text-[11px] text-gray-400">
           <span>支持微信 PC/手机端多选复制文本</span>
           {inputText.trim() && (
-            <button
-              onClick={() => {
-                if (inputText.trim()) {
-                  onPasteText(inputText);
-                  setInputText("");
-                }
-              }}
-              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-medium flex items-center gap-1 transition-colors shadow-2xs"
-            >
-              <span>解析导入</span>
-              <Send className="w-3 h-3" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              {onOpenSandbox && (
+                <button
+                  type="button"
+                  onClick={() => onOpenSandbox(inputText.trim())}
+                  className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-md text-xs font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+                  title="以此草稿在沙盒中模拟对方反应"
+                >
+                  <FlaskConical className="w-3 h-3 text-purple-600" />
+                  <span>沙盒推演此条</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (inputText.trim()) {
+                    onPasteText(inputText);
+                    setInputText("");
+                  }
+                }}
+                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+              >
+                <span>解析导入</span>
+                <Send className="w-3 h-3" />
+              </button>
+            </div>
           )}
         </div>
       </div>
