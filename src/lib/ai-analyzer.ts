@@ -59,7 +59,8 @@ export async function analyzeChatHistory(
         messages: [
           {
             role: "system",
-            content: `你是一位顶级恋爱心理学家兼聊天沟通教练，擅长通过微信文字细节洞察两性好感度、隐秘心理与潜台词。
+            content: `你是一位顶级恋爱心理学家兼实战对局教练，融合了现代依恋心理学与“深情祖师爷”实战认知框架（吸引力>讨好、给台阶机制、人性不可考验、不确定即不喜欢、真诚反套路）。
+你擅长通过微信文字细节洞察两性好感度、隐秘心理与潜台词，坚决拒绝爹味说教与廉价心灵鸡汤，输出一针见血、高情商且具有极高实战价值的研判建议。
 请务必返回严格的 JSON 格式数据，不得输出任何额外的 Markdown 解释说明。`,
           },
           {
@@ -142,11 +143,23 @@ function buildAnalysisPrompt(messages: Message[]): string {
 
 ${formattedChat}
 
-【分析要求】
+【核心研判原则与认知模型】
+必须基于以下 5 大实战认知模型进行穿透式研判：
+1. 【吸引力法则（吸引力 > 讨好）】：没有人会因为你卑微付出或无底线讨好而喜欢你。重点审视【我方】是否存在字数严重失衡（我方长篇大论对方单字敷衍）、秒回过多、频繁卑微报备、无底线迎合的“舔狗/需求感过载”行为；若有，在 myPerformanceSummary 中直接指出并从严扣分。
+2. 【给台阶机制（Face-Saving Architecture）】：人不是不想互动，而是需要一个能说服自己、保持体面的理由。评估双方是否在为对方提供台阶；在规划 nextStepAdvice 时，绝不建议直接逼迫邀约，必须指导我方“制造自然合逻辑的台阶与借口”。
+3. 【不确定即不喜欢（现实主义止损）】：如果对方回复长周期敷衍、忽冷忽热，直接诊断为对方当前好感不足，严禁给出“继续坚持每天早安晚安”的毒鸡汤，必须指导我方守住尊严边界，冷处理抽离并专注自我提升（你若盛开，蝴蝶自来）。
+4. 【人性不可考验】：反对故意断联、故意冷落测探等反噬关系的伪技巧，提倡直接、体面、有边界感的沟通。
+5. 【真诚是最高级的套路】：面对未知话题绝不强行装懂，善于以真诚好奇反向借力打力。
+
+【输出要求】
 1. 分析对方对【我方】的当前“好感度”评分（0到100整数）、好感度阶段（如：接触冰点/客气礼貌/友谊区间/暧昧拉扯/好感爆棚）、综合好感度诊断总结。
-2. 分析【我方】目前的表现发挥评分（0到100整数）、发挥总结及存在的问题。
-3. 给出下一步最明智、高情商的战略行动指引（nextStepAdvice）。
-4. 针对对方最近的一两句发言，量身生成 3 条不同风格的【参考回复选项】（含：幽默推拉/共情调侃/制造好奇/以退为进等），并附带心理学机理分析。
+2. 分析【我方】目前的表现发挥评分（0到100整数，严格考核需求感与讨好倾向）、发挥总结（犀利指出问题）。
+3. 给出下一步最明智、高情商的战略行动指引（nextStepAdvice），务实、带行动台阶。
+4. 针对对方最近的一两句发言，量身生成 3 条不同实战维度的【参考回复选项】：
+   - 第1条：【巧妙给台阶法】（制造合情合理的体面借口，降低对方心理阻力与防御心）
+   - 第2条：【高姿态吸引推拉】（拒绝舔狗式迎合，保持自身神秘感与生活节奏，不卑不亢）
+   - 第3条：【真诚借力打力】（绝不强行装懂，真诚求教反向激发对方倾诉欲与分享欲）
+   每条均附带战术机理分析（rationale）。
 5. 针对聊天中每一条消息（以 messageIndex 对应），分析其“情绪（emotion，3-6字）”、“意图/潜台词（intent，4-10字）”以及“深度解析（subtext）”。
 6. 【雷达图五维评分】（0-100分及简评）：情感张力、情绪价值、分享意愿、相处安全感、话题掌控力。
 7. 【对话情绪走势】：沿对话发展提炼 3-5 个阶段节点（timeLabel, score: 0-100, event, quote, isHighlight）。
@@ -157,9 +170,9 @@ ${formattedChat}
   "affectionScore": 75,
   "affectionStage": "暧昧升温中",
   "affectionSummary": "对方多次主动报备琐事...",
-  "myPerformanceScore": 80,
-  "myPerformanceSummary": "自嘲适度但稍微被动...",
-  "nextStepAdvice": "顺应话题借机抛出游戏或线下邀约钩子...",
+  "myPerformanceScore": 75,
+  "myPerformanceSummary": "需求感控制尚可，但缺乏关键推进时的体面台阶...",
+  "nextStepAdvice": "以给台阶机制抛出轻量借口，制造低心理负担的互动契机...",
   "radarDimensions": [
     { "dimension": "情感张力", "score": 82, "comment": "多次隐晦试探与推拉，张力充盈" },
     { "dimension": "情绪价值", "score": 78, "comment": "能积极接住对方情绪并提供心理按摩" },
@@ -181,9 +194,21 @@ ${formattedChat}
   "suggestedReplies": [
     {
       "id": "reply-1",
-      "type": "幽默推拉",
+      "type": "巧妙给台阶法",
       "text": "回复内容文本...",
-      "rationale": "心理学推演理由..."
+      "rationale": "制造合理体面理由，降低对方心理负担..."
+    },
+    {
+      "id": "reply-2",
+      "type": "高姿态吸引推拉",
+      "text": "回复内容文本...",
+      "rationale": "展示生活节奏，反向推拉调侃..."
+    },
+    {
+      "id": "reply-3",
+      "type": "真诚借力打力",
+      "text": "回复内容文本...",
+      "rationale": "绝不装懂，真诚求教激发倾诉欲..."
     }
   ],
   "messageAnalyses": [
@@ -340,6 +365,18 @@ export function generateSmartHeuristicAnalysis(messages: Message[]): OverallAnal
 
   const lastCrushMsg = crushMessages[crushMessages.length - 1]?.content || "";
 
+  // 检查我方是否有讨好 / 需求感过载迹象 (吸引力 > 讨好)
+  const myTotalLength = myMessages.reduce((acc, m) => acc + m.content.length, 0);
+  const isSimping = myMessages.length >= 3 && myTotalLength > totalLength * 1.8;
+  const myPerformanceScore = isSimping ? 68 : 82;
+  const myPerformanceSummary = isSimping
+    ? "【注意需求感过载】你的回复篇幅明显长于对方，存在过度解释与迎合倾向。牢记‘吸引力 > 讨好’：停止单方面情绪倾倒，适当精炼字数，保持自我生活节奏。"
+    : "整体互动不卑不亢，未暴露过强需求感。建议多在关键节点‘巧妙给台阶’，制造低心理负担的互动契机。";
+
+  const nextStepAdvice = isSimping
+    ? "当前对方投入度低于你，切忌继续疯狂发消息或查户口。先冷处理半天，专注自身工作/运动，找回主场气场（你若盛开，蝴蝶自来）。"
+    : "顺应最新话题，运用‘给台阶机制’抛出合理的轻量借口（如顺路/朋友鸽了），降低对方防备心，自然推进下一步互动。";
+
   return {
     affectionScore: score,
     affectionStage: stage,
@@ -347,32 +384,34 @@ export function generateSmartHeuristicAnalysis(messages: Message[]): OverallAnal
       crushMessages.length > 0
         ? `对方发言频次与互动意愿整体较强（${emojiCount > 0 ? "伴随丰富情绪/表情" : "沟通平稳"}），展现了良好的生活分享欲与信任基础。`
         : "聊天记录较短，对方初步参与交流，建议继续观察后续互动粘性。",
-    myPerformanceScore: 82,
-    myPerformanceSummary: "你的回复能接住核心梗，态度随和，但建议增加幽默反击与调侃，避免沦为单纯的倾听者。",
-    nextStepAdvice: "利用对方最新抛出的情境细节，发起轻量调侃或埋下下次连麦/见面的线索，制造情绪过山车。",
+    myPerformanceScore,
+    myPerformanceSummary,
+    nextStepAdvice,
     radarDimensions: generateDefaultRadar(messages, score),
     timelineTrend: generateDefaultTimeline(messages, score),
     keywords: generateDefaultKeywords(messages),
     suggestedReplies: [
       {
         id: "rep-1",
-        type: "幽默推拉（推荐）",
+        type: "巧妙给台阶法",
         text: lastCrushMsg.includes("王者") || lastCrushMsg.includes("游戏")
-          ? "少来，小学生哪有你难带？改天我带你，让你见识下什么叫大腿。"
-          : "哈哈你这么一说，我怎么觉得你是在故意暗示我呢？",
-        rationale: "风趣反制，既不卑不亢，又自然营造出两人专属的互动契机。",
+          ? "刚好周末朋友鸽了我，缺个开黑搭档。赏脸让我带你飞一把？"
+          : "正好顺路在附近办事，看你提过这家店，顺道给你带一杯还是赏脸一起坐坐？",
+        rationale: "深情祖师爷核心心法：制造合情合理的借口与台阶，给对方体面的赴约/回复理由，防御心理直降。",
       },
       {
         id: "rep-2",
-        type: "共情调侃",
-        text: "心疼你一秒钟！赶紧放下手机深呼吸，免得被气出内伤~",
-        rationale: "传递细腻的情绪关怀，展现同理心与体贴感。",
+        type: "高姿态吸引推拉",
+        text: lastCrushMsg.includes("王者") || lastCrushMsg.includes("游戏")
+          ? "少来，小学生哪有你难带？改天让你见识下什么叫大腿，不过得看你表现~"
+          : "哈哈你这么一说，我怎么觉得你是在故意暗示我呢？坦白从宽，藏了什么心事？",
+        rationale: "吸引力 > 讨好：不卑不亢风趣反击，展示自身价值与自信，制造良性情绪拉扯。",
       },
       {
         id: "rep-3",
-        type: "制造好奇",
-        text: "其实关于这件事情，我刚刚突然发现了一个惊人细节，猜猜是什么？",
-        rationale: "制造认知断层，用好奇心钩子引发对方主动秒回追问。",
+        type: "真诚借力打力",
+        text: "真没太了解过诶！不过听你这么一说我突然超级好奇，有什么必入坑推荐吗？快给我种种草~",
+        rationale: "真诚是最高级套路：面对未知绝不强行装懂，坦然承认并展示重视细节，极大激发对方分享欲。",
       },
     ],
   };

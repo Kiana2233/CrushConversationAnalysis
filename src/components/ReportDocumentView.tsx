@@ -577,29 +577,35 @@ export const ReportDocumentView: React.FC<ReportDocumentViewProps> = ({
 
                 {overallAnalysis.suggestedReplies && overallAnalysis.suggestedReplies.length > 0 && (
                   <div className="pt-2 space-y-2 border-t border-gray-100">
-                    <span className="text-[11px] font-bold text-gray-700 block">推荐回复选项（点击复制）：</span>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {overallAnalysis.suggestedReplies.slice(0, 2).map((r) => {
+                    <span className="text-[11px] font-bold text-gray-700 block">三大实战战术回复（点击一键复制发微信）：</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                      {overallAnalysis.suggestedReplies.slice(0, 3).map((r) => {
                         const isCopied = copiedId === r.id;
                         return (
                           <div
                             key={r.id}
                             onClick={() => handleCopyReply(r)}
-                            className="p-2.5 bg-white rounded-lg border border-gray-200 hover:border-[#105e46] cursor-pointer transition-all"
+                            title={r.rationale}
+                            className="p-2.5 bg-white rounded-xl border border-gray-200/90 hover:border-[#105e46] hover:shadow-2xs cursor-pointer transition-all flex flex-col justify-between"
                           >
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] font-bold text-[#105e46] bg-emerald-50 px-1.5 py-0.2 rounded">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[10px] font-bold text-[#105e46] bg-[#ecfdf5] border border-[#a7f3d0]/80 px-1.5 py-0.2 rounded">
                                 {r.type}
                               </span>
                               {isCopied ? (
-                                <span className="text-[10px] text-emerald-600 flex items-center gap-0.5">
+                                <span className="text-[10px] text-[#105e46] flex items-center gap-0.5 font-medium">
                                   <Check className="w-3 h-3" /> 已复制
                                 </span>
                               ) : (
-                                <Copy className="w-3 h-3 text-gray-400" />
+                                <Copy className="w-3 h-3 text-gray-400 hover:text-[#105e46]" />
                               )}
                             </div>
-                            <p className="text-[11.5px] text-gray-800 line-clamp-2">{r.text}</p>
+                            <p className="text-[11.5px] text-gray-800 line-clamp-3 leading-relaxed mb-1 font-sans">{r.text}</p>
+                            {r.rationale && (
+                              <p className="text-[10px] text-gray-400 italic line-clamp-1 border-t border-gray-100 pt-1 mt-auto">
+                                🎯 {r.rationale}
+                              </p>
+                            )}
                           </div>
                         );
                       })}
