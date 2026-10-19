@@ -22,6 +22,26 @@ export interface SuggestedReply {
   rationale: string;      // 推荐理由与心理学机理
 }
 
+export interface RadarDimension {
+  dimension: string;      // 维度名 (情感张力 / 情绪价值 / 分享意愿 / 相处安全感 / 话题掌控力)
+  score: number;          // 0 - 100
+  comment: string;        // 犀利简评
+}
+
+export interface TimelineMoment {
+  timeLabel: string;      // 节点阶段描述 (如 "破冰起步", "深夜深聊", "分歧降温", "甜度回升")
+  score: number;          // 情绪指数 0 - 100
+  event: string;          // 事件或名场面描述
+  quote?: string;         // 关键对话原句
+  isHighlight?: boolean;  // 是否高光波峰
+}
+
+export interface KeywordCloudItem {
+  text: string;           // 关键词
+  weight: number;         // 权重 1 - 10
+  category: "shared" | "crush" | "me"; // 双方共鸣 / 对方专属 / 我方专属
+}
+
 export interface OverallAnalysis {
   affectionScore: number;         // 好感度 0 - 100
   affectionStage: string;         // 接触期 / 暧昧升温 / 忽冷忽热 / 深度依赖
@@ -30,6 +50,9 @@ export interface OverallAnalysis {
   myPerformanceSummary: string;   // 我的发挥总结
   nextStepAdvice: string;         // 下一步行动策略指南
   suggestedReplies: SuggestedReply[];
+  radarDimensions?: RadarDimension[];
+  timelineTrend?: TimelineMoment[];
+  keywords?: KeywordCloudItem[];
 }
 
 export interface ModelConfig {

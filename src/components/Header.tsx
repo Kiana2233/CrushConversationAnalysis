@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, ChevronRight, Sparkles, Heart, ArrowLeftRight, ListChecks } from "lucide-react";
+import { Plus, ChevronRight, Sparkles, Heart, ArrowLeftRight, ListChecks, Scale } from "lucide-react";
 import { OverallAnalysis } from "@/types/chat";
 import { getAvatarInitial } from "@/lib/parser";
 
@@ -141,9 +141,9 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Center: Affection Score Indicator (好感度) */}
       <div
-        onClick={overallAnalysis ? onOpenAnalysisDetail : onOpenPasteModal}
+        onClick={hasMessages ? onOpenAnalysisDetail : onOpenPasteModal}
         className="flex items-center gap-2 cursor-pointer group px-3 py-1.5 rounded-lg hover:bg-[#ececee] transition-all"
-        title="点击查看好感度深度解析报告"
+        title="点击查看数据罗盘与好感度报告"
       >
         <span className="text-xs font-medium text-[#636366]">好感度</span>
 
@@ -174,13 +174,26 @@ export const Header: React.FC<HeaderProps> = ({
         ) : (
           <div className="flex items-center gap-1">
             <span className="w-6 h-0.5 bg-[#e05656] inline-block rounded-full" />
-            <span className="text-[11px] text-[#8e8e93]">暂无数据</span>
+            <span className="text-[11px] text-[#8e8e93]">
+              {hasMessages ? "查看罗盘" : "暂无数据"}
+            </span>
           </div>
         )}
       </div>
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1.5">
+        {hasMessages && (
+          <button
+            onClick={onOpenAnalysisDetail}
+            className="px-2.5 h-8 rounded-lg text-xs font-medium flex items-center gap-1.5 text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 shadow-2xs hover:border-emerald-300 hover:text-emerald-700 transition-all cursor-pointer"
+            title="查看双方投入度天平与时段分布"
+          >
+            <Scale className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="hidden sm:inline">数据罗盘</span>
+          </button>
+        )}
+
         {hasMessages && onToggleSelectionMode && (
           <button
             onClick={onToggleSelectionMode}

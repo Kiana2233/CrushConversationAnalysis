@@ -740,12 +740,16 @@ export default function Home() {
         onChangeStatus={setRelationshipStatus}
       />
 
-      {/* 抽屉：好感度深度全维研判报告 */}
+      {/* 抽屉：好感度深度全维研判报告与数据罗盘 */}
       <AnalysisDetailDrawer
         isOpen={isDetailDrawerOpen}
         onClose={() => setIsDetailDrawerOpen(false)}
         overallAnalysis={overallAnalysis}
         crushName={crushName}
+        myName={myName}
+        messages={messages}
+        isAnalyzing={isAnalyzing}
+        onTriggerAnalyze={() => runAnalysis(messages)}
       />
 
       {/* 弹窗：单句消息心理学深度解析 */}

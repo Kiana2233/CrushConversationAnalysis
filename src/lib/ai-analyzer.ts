@@ -148,6 +148,9 @@ ${formattedChat}
 3. 给出下一步最明智、高情商的战略行动指引（nextStepAdvice）。
 4. 针对对方最近的一两句发言，量身生成 3 条不同风格的【参考回复选项】（含：幽默推拉/共情调侃/制造好奇/以退为进等），并附带心理学机理分析。
 5. 针对聊天中每一条消息（以 messageIndex 对应），分析其“情绪（emotion，3-6字）”、“意图/潜台词（intent，4-10字）”以及“深度解析（subtext）”。
+6. 【雷达图五维评分】（0-100分及简评）：情感张力、情绪价值、分享意愿、相处安全感、话题掌控力。
+7. 【对话情绪走势】：沿对话发展提炼 3-5 个阶段节点（timeLabel, score: 0-100, event, quote, isHighlight）。
+8. 【话题关键词气泡云】：提炼 6-10 个代表性话题/口头禅/热词，标注 category ("shared"|"crush"|"me") 与 weight (1-10)。
 
 请严格按以下 JSON 字段结构返回：
 {
@@ -157,6 +160,24 @@ ${formattedChat}
   "myPerformanceScore": 80,
   "myPerformanceSummary": "自嘲适度但稍微被动...",
   "nextStepAdvice": "顺应话题借机抛出游戏或线下邀约钩子...",
+  "radarDimensions": [
+    { "dimension": "情感张力", "score": 82, "comment": "多次隐晦试探与推拉，张力充盈" },
+    { "dimension": "情绪价值", "score": 78, "comment": "能积极接住对方情绪并提供心理按摩" },
+    { "dimension": "分享意愿", "score": 85, "comment": "主动报备日常生活，信任度高" },
+    { "dimension": "相处安全感", "score": 75, "comment": "回复稳定，互动节奏合拍" },
+    { "dimension": "话题掌控力", "score": 68, "comment": "交替主导，未出现单方面被牵着鼻子走" }
+  ],
+  "timelineTrend": [
+    { "timeLabel": "开场破冰", "score": 65, "event": "日常问候打招呼", "quote": "在干嘛呢", "isHighlight": false },
+    { "timeLabel": "话题升温", "score": 85, "event": "共鸣吐槽与分享趣事", "quote": "今天遇到一件奇葩事", "isHighlight": true },
+    { "timeLabel": "深夜晚安", "score": 88, "event": "依依不舍与次日约定", "quote": "快睡吧，明天见", "isHighlight": true }
+  ],
+  "keywords": [
+    { "text": "王者荣耀", "weight": 9, "category": "shared" },
+    { "text": "小学生", "weight": 8, "category": "crush" },
+    { "text": "晚安", "weight": 7, "category": "shared" },
+    { "text": "带你飞", "weight": 6, "category": "me" }
+  ],
   "suggestedReplies": [
     {
       "id": "reply-1",
@@ -177,8 +198,9 @@ ${formattedChat}
 }
 
 function formatAiResult(parsed: any, messages: Message[]): OverallAnalysis {
+  const affectionScore = Number(parsed.affectionScore) || 70;
   const result: OverallAnalysis = {
-    affectionScore: Number(parsed.affectionScore) || 70,
+    affectionScore,
     affectionStage: parsed.affectionStage || "暧昧拉扯中",
     affectionSummary: parsed.affectionSummary || "对方态度积极，保持了良好的沟通节奏与分享欲。",
     myPerformanceScore: Number(parsed.myPerformanceScore) || 78,
@@ -192,6 +214,29 @@ function formatAiResult(parsed: any, messages: Message[]): OverallAnalysis {
           rationale: r.rationale || "",
         }))
       : [],
+    radarDimensions: Array.isArray(parsed.radarDimensions) && parsed.radarDimensions.length >= 3
+      ? parsed.radarDimensions.map((r: any) => ({
+          dimension: String(r.dimension || "综合维度"),
+          score: Math.min(100, Math.max(0, Number(r.score) || 70)),
+          comment: String(r.comment || ""),
+        }))
+      : generateDefaultRadar(messages, affectionScore),
+    timelineTrend: Array.isArray(parsed.timelineTrend) && parsed.timelineTrend.length >= 2
+      ? parsed.timelineTrend.map((t: any) => ({
+          timeLabel: String(t.timeLabel || "交流阶段"),
+          score: Math.min(100, Math.max(0, Number(t.score) || 70)),
+          event: String(t.event || ""),
+          quote: t.quote ? String(t.quote) : undefined,
+          isHighlight: Boolean(t.isHighlight),
+        }))
+      : generateDefaultTimeline(messages, affectionScore),
+    keywords: Array.isArray(parsed.keywords) && parsed.keywords.length >= 3
+      ? parsed.keywords.map((k: any) => ({
+          text: String(k.text || ""),
+          weight: Math.min(10, Math.max(1, Number(k.weight) || 5)),
+          category: ["shared", "crush", "me"].includes(k.category) ? k.category : "shared",
+        }))
+      : generateDefaultKeywords(messages),
   };
 
   // 回填 AI 产出的单句分析
@@ -305,6 +350,9 @@ export function generateSmartHeuristicAnalysis(messages: Message[]): OverallAnal
     myPerformanceScore: 82,
     myPerformanceSummary: "你的回复能接住核心梗，态度随和，但建议增加幽默反击与调侃，避免沦为单纯的倾听者。",
     nextStepAdvice: "利用对方最新抛出的情境细节，发起轻量调侃或埋下下次连麦/见面的线索，制造情绪过山车。",
+    radarDimensions: generateDefaultRadar(messages, score),
+    timelineTrend: generateDefaultTimeline(messages, score),
+    keywords: generateDefaultKeywords(messages),
     suggestedReplies: [
       {
         id: "rep-1",
@@ -328,4 +376,108 @@ export function generateSmartHeuristicAnalysis(messages: Message[]): OverallAnal
       },
     ],
   };
+}
+
+export function generateDefaultRadar(messages: Message[], affectionScore: number) {
+  const isSweet = affectionScore >= 75;
+  return [
+    {
+      dimension: "情感张力",
+      score: Math.min(95, Math.max(50, affectionScore + (isSweet ? 4 : -5))),
+      comment: isSweet ? "言语间多次出现推拉与试探，暧昧张力充盈" : "互动平实温和，尚未展开高频情感试探",
+    },
+    {
+      dimension: "情绪价值",
+      score: Math.min(95, Math.max(55, affectionScore + 2)),
+      comment: "双方均能较好接住话题并给予情绪安抚或调侃",
+    },
+    {
+      dimension: "分享意愿",
+      score: Math.min(98, Math.max(60, messages.length > 8 ? 85 : 70)),
+      comment: "日常琐碎报备密集，心理防御壁垒较低",
+    },
+    {
+      dimension: "相处安全感",
+      score: Math.min(92, Math.max(50, 78)),
+      comment: "回复连贯稳定，无明显忽冷忽热断崖感",
+    },
+    {
+      dimension: "话题掌控力",
+      score: 72,
+      comment: "交替开启与承接，节奏掌控较为平衡",
+    },
+  ];
+}
+
+export function generateDefaultTimeline(messages: Message[], affectionScore: number) {
+  if (messages.length <= 2) {
+    return [
+      { timeLabel: "破冰接触", score: 65, event: "初步建立对话连接", quote: messages[0]?.content, isHighlight: false },
+      { timeLabel: "当前阶段", score: affectionScore, event: "保持互动与好感探索", isHighlight: true },
+    ];
+  }
+
+  const p1 = messages[0];
+  const midIdx = Math.floor(messages.length / 2);
+  const p2 = messages[midIdx];
+  const p3 = messages[messages.length - 1];
+
+  return [
+    {
+      timeLabel: "开场破冰",
+      score: 62,
+      event: "日常问候打招呼开启话题",
+      quote: p1 ? p1.content.slice(0, 20) : undefined,
+      isHighlight: false,
+    },
+    {
+      timeLabel: "话题深入",
+      score: Math.min(95, affectionScore + 6),
+      event: "分享琐事与情绪共鸣",
+      quote: p2 ? p2.content.slice(0, 20) : undefined,
+      isHighlight: true,
+    },
+    {
+      timeLabel: "当前状态",
+      score: affectionScore,
+      event: "意犹未尽的互动拉扯",
+      quote: p3 ? p3.content.slice(0, 20) : undefined,
+      isHighlight: affectionScore >= 80,
+    },
+  ];
+}
+
+export function generateDefaultKeywords(messages: Message[]) {
+  const allText = messages.map((m) => m.content).join(" ");
+  const candidates: Array<{ text: string; weight: number; category: "shared" | "crush" | "me" }> = [];
+
+  const commonKeywords = [
+    { word: "王者", cat: "shared" as const, weight: 9 },
+    { word: "游戏", cat: "shared" as const, weight: 8 },
+    { word: "晚安", cat: "shared" as const, weight: 8 },
+    { word: "吃饭", cat: "shared" as const, weight: 7 },
+    { word: "加班", cat: "crush" as const, weight: 7 },
+    { word: "哈哈", cat: "shared" as const, weight: 9 },
+    { word: "小学生", cat: "crush" as const, weight: 8 },
+    { word: "带你飞", cat: "me" as const, weight: 7 },
+    { word: "周末", cat: "shared" as const, weight: 6 },
+    { word: "猫咪", cat: "crush" as const, weight: 7 },
+  ];
+
+  commonKeywords.forEach((item) => {
+    if (allText.includes(item.word)) {
+      candidates.push({ text: item.word, weight: item.weight, category: item.cat });
+    }
+  });
+
+  if (candidates.length < 4) {
+    candidates.push(
+      { text: "日常分享", weight: 8, category: "shared" },
+      { text: "秒回", weight: 7, category: "me" },
+      { text: "情绪价值", weight: 9, category: "shared" },
+      { text: "晚安", weight: 6, category: "crush" }
+    );
+  }
+
+  return candidates;
 }
