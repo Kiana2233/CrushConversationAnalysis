@@ -40,14 +40,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   return (
     <aside className="w-[68px] h-screen bg-[#f3f4f6] border-r border-[#e5e7eb] flex flex-col items-center py-3.5 justify-between shrink-0 select-none z-30">
-      {/* Top Group: macOS Traffic Lights & Brand Logo */}
-      <div className="flex flex-col items-center gap-4 w-full">
-        {/* macOS Window Controls */}
-        <div className="flex items-center gap-1.5 px-3 py-1">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56] border border-[#e0443e]/40 inline-block" />
-          <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e] border border-[#dea123]/40 inline-block" />
-          <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f] border border-[#1aab29]/40 inline-block" />
-        </div>
+      {/* Top Group: Brand Logo & Navigation */}
+      <div className="flex flex-col items-center gap-5 w-full">
 
         {/* TraceMemo Style Deep Emerald Brand Logo */}
         <div
