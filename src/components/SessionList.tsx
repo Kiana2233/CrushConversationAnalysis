@@ -44,8 +44,6 @@ export const SessionList: React.FC<SessionListProps> = ({
     setMounted(true);
   }, []);
 
-  if (!isOpen) return null;
-
   const handleStartRename = (session: SessionSummary, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingId(session.id);
@@ -79,7 +77,7 @@ export const SessionList: React.FC<SessionListProps> = ({
     return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
-  // 按搜索条件过滤
+  // 按搜索条件过滤 (必须在 early return 之前执行 Hook)
   const filteredSessions = useMemo(() => {
     if (!searchQuery.trim()) return sessions;
     const q = searchQuery.toLowerCase().trim();
@@ -90,7 +88,7 @@ export const SessionList: React.FC<SessionListProps> = ({
     );
   }, [sessions, searchQuery]);
 
-  // 按日期分组 (今日, 昨日, 更早)
+  // 按日期分组 (必须在 early return 之前执行 Hook)
   const groupedSessions = useMemo(() => {
     if (!mounted) {
       return { 历史档案: filteredSessions };
@@ -114,7 +112,10 @@ export const SessionList: React.FC<SessionListProps> = ({
     });
 
     return groups;
-  }, [filteredSessions]);
+  }, [filteredSessions, mounted]);
+
+  // 所有 Hook 调用完毕后，方可根据 isOpen 返回 null
+  if (!isOpen) return null;
 
   return (
     <aside className="w-[280px] h-screen bg-[#fafbfc] border-r border-[#e5e7eb] flex flex-col shrink-0 select-none z-20">
