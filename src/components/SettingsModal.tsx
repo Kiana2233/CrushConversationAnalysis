@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { X, UserCheck, Shield, Check, Heart } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, UserCheck, Shield, Check, Heart, ArrowLeftRight } from "lucide-react";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -29,7 +29,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [selectedStatus, setSelectedStatus] = useState(relationshipStatus);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  // 每次打开弹窗或外部角色状态更新时，强同步最新数据
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedMe(myName || (participants[0] ?? "我"));
+      setSelectedCrush(crushName || (participants[1] ?? "对方"));
+      setSelectedStatus(relationshipStatus);
+    }
+  }, [isOpen, myName, crushName, relationshipStatus, participants]);
+
   if (!isOpen) return null;
+
+  // 保证选项池完整且不重复
+  const availableParticipants = Array.from(
+    new Set([...participants, selectedMe, selectedCrush, myName, crushName].filter(Boolean))
+  );
+
+  // 弹窗内一键对调身份
+  const handleSwap = () => {
+    const temp = selectedMe;
+    setSelectedMe(selectedCrush);
+    setSelectedCrush(temp);
+  };
+
+  // 选择“我”：如果与“对方”冲突，自动将“对方”切换为另一个角色
+  const handleMeChange = (newMe: string) => {
+    setSelectedMe(newMe);
+    if (newMe === selectedCrush) {
+      const other = availableParticipants.find((p) => p !== newMe);
+      if (other) setSelectedCrush(other);
+    }
+  };
+
+  // 选择“对方”：如果与“我”冲突，自动将“我”切换为另一个角色
+  const handleCrushChange = (newCrush: string) => {
+    setSelectedCrush(newCrush);
+    if (newCrush === selectedMe) {
+      const other = availableParticipants.find((p) => p !== newCrush);
+      if (other) setSelectedMe(other);
+    }
+  };
 
   const handleSave = () => {
     onUpdateRoles(selectedMe, selectedCrush);
@@ -38,7 +77,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setTimeout(() => {
       setSavedSuccess(false);
       onClose();
-    }, 500);
+    }, 400);
   };
 
   return (
@@ -65,21 +104,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Modal Body */}
         <div className="p-5 space-y-4 text-xs">
           {/* 1. 角色设定 */}
-          {participants.length > 0 ? (
+          {availableParticipants.length > 0 && (
             <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
-              <div className="flex items-center gap-1.5 font-medium text-gray-700">
-                <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>发言角色归属</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-medium text-gray-700">
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>发言角色归属</span>
+                </div>
+                {availableParticipants.length >= 2 && (
+                  <button
+                    type="button"
+                    onClick={handleSwap}
+                    className="text-[11px] text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors font-medium cursor-pointer"
+                    title="互相对调我方与对方身份"
+                  >
+                    <ArrowLeftRight className="w-3 h-3" />
+                    <span>一键对调</span>
+                  </button>
+                )}
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-gray-500 mb-1 block">谁是【我】（右侧绿气泡）</label>
                   <select
                     value={selectedMe}
-                    onChange={(e) => setSelectedMe(e.target.value)}
+                    onChange={(e) => handleMeChange(e.target.value)}
                     className="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs text-gray-800 outline-none focus:border-emerald-500"
                   >
-                    {participants.map((p) => (
+                    {availableParticipants.map((p) => (
                       <option key={p} value={p}>
                         {p}
                       </option>
@@ -90,10 +143,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <label className="text-gray-500 mb-1 block">谁是【对方Crush】（左侧）</label>
                   <select
                     value={selectedCrush}
-                    onChange={(e) => setSelectedCrush(e.target.value)}
+                    onChange={(e) => handleCrushChange(e.target.value)}
                     className="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs text-gray-800 outline-none focus:border-emerald-500"
                   >
-                    {participants.map((p) => (
+                    {availableParticipants.map((p) => (
                       <option key={p} value={p}>
                         {p}
                       </option>
@@ -102,7 +155,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
             </div>
-          ) : null}
+          )}
 
           {/* 2. 关系定位设定 */}
           <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-100 space-y-2">

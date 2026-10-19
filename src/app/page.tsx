@@ -324,29 +324,101 @@ export default function Home() {
     }
   };
 
+  // 更新或对调发言人角色归属（彻底解决对调全部变成对方的问题）
+  const handleUpdateRoles = useCallback(
+    (newMy: string, newCrush: string) => {
+      if (!newMy || !newCrush) return;
+      const oldMy = myName;
+      const oldCrush = crushName;
+
+      setMyName(newMy);
+      setCrushName(newCrush);
+      setParticipants([newMy, newCrush].filter(Boolean));
+
+      // 判断是否是对调（我方与对方互换）
+      const isDirectSwap =
+        (newMy === oldCrush && newCrush === oldMy) ||
+        (Boolean(oldMy && oldCrush) && newMy !== oldMy && newCrush !== oldCrush);
+
+      const updatedMessages = messages.map((msg) => {
+        let isMe = msg.isMe;
+
+        if (isDirectSwap) {
+          // 直接对调：原我方变对方，原对方变我方，绝不可能全变成对方！
+          isMe = !msg.isMe;
+        } else {
+          // 明确判定归属
+          if (msg.sender === newMy) {
+            isMe = true;
+          } else if (msg.sender === newCrush) {
+            isMe = false;
+          } else if (msg.sender === oldMy) {
+            isMe = true;
+          } else if (msg.sender === oldCrush) {
+            isMe = false;
+          }
+        }
+
+        // 同步更新消息的 sender 为当前选择的角色规范名，消除空格与历史差异
+        return {
+          ...msg,
+          isMe,
+          sender: isMe ? newMy : newCrush,
+        };
+      });
+
+      setMessages(updatedMessages);
+      showToast(`角色身份已切换：我方【${newMy}】，对方【${newCrush}】`);
+
+      // 同步持久化到 SQLite
+      persistSession({
+        messages: updatedMessages,
+        crushName: newCrush,
+        myName: newMy,
+        relationshipStatus,
+        overallAnalysis,
+      });
+
+      // 自动以新视角触发 AI 研判
+      runAnalysis(updatedMessages, newCrush, newMy);
+    },
+    [messages, myName, crushName, relationshipStatus, overallAnalysis, persistSession, runAnalysis, showToast]
+  );
+
   // 一键对调身份
-  const handleSwapRoles = () => {
-    const newMyName = crushName;
-    const newCrushName = myName;
-    setMyName(newMyName);
-    setCrushName(newCrushName);
-    const updatedMessages = messages.map((msg) => ({
-      ...msg,
-      isMe: msg.sender === newMyName,
-    }));
-    setMessages(updatedMessages);
-    showToast(`已对调身份：【${newMyName}】为我方，【${newCrushName}】为对方`);
+  const handleSwapRoles = useCallback(() => {
+    handleUpdateRoles(crushName, myName);
+  }, [handleUpdateRoles, crushName, myName]);
 
-    persistSession({
-      messages: updatedMessages,
-      crushName: newCrushName,
-      myName: newMyName,
-      relationshipStatus,
-      overallAnalysis,
-    });
+  // 修改对方备注
+  const handleRenameCrush = useCallback(
+    (newName: string) => {
+      if (!newName.trim() || newName.trim() === crushName) return;
+      const trimmed = newName.trim();
+      const oldCrush = crushName;
+      setCrushName(trimmed);
+      setParticipants((prev) => {
+        const next = prev.map((p) => (p === oldCrush ? trimmed : p));
+        if (!next.includes(trimmed)) next.push(trimmed);
+        return next;
+      });
 
-    runAnalysis(updatedMessages, newCrushName, newMyName);
-  };
+      const updatedMessages = messages.map((msg) => ({
+        ...msg,
+        sender: msg.isMe ? msg.sender : trimmed,
+      }));
+      setMessages(updatedMessages);
+
+      persistSession({
+        messages: updatedMessages,
+        crushName: trimmed,
+        myName,
+        relationshipStatus,
+        overallAnalysis,
+      });
+    },
+    [messages, crushName, myName, relationshipStatus, overallAnalysis, persistSession]
+  );
 
   // 单条消息删除（支持撤销）
   const handleDeleteMessage = useCallback(
@@ -610,7 +682,7 @@ export default function Home() {
           isAnalyzing={isAnalyzing}
           onOpenPasteModal={() => setIsPasteOpen(true)}
           onOpenAnalysisDetail={() => setIsDetailDrawerOpen(true)}
-          onChangeCrushName={setCrushName}
+          onChangeCrushName={handleRenameCrush}
           onChangeStatus={setRelationshipStatus}
           onSwapRoles={handleSwapRoles}
           hasMessages={messages.length > 0}
@@ -664,16 +736,7 @@ export default function Home() {
         myName={myName}
         crushName={crushName}
         relationshipStatus={relationshipStatus}
-        onUpdateRoles={(newMy, newCrush) => {
-          setMyName(newMy);
-          setCrushName(newCrush);
-          setMessages((prev) =>
-            prev.map((msg) => ({
-              ...msg,
-              isMe: msg.sender === newMy,
-            }))
-          );
-        }}
+        onUpdateRoles={handleUpdateRoles}
         onChangeStatus={setRelationshipStatus}
       />
 
