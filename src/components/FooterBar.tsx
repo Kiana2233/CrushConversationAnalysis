@@ -71,10 +71,10 @@ export const FooterBar: React.FC<FooterBarProps> = ({
           {hasMessages && onOpenSandbox && (
             <button
               onClick={() => onOpenSandbox()}
-              className="text-[11px] font-medium text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200/90 px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
+              className="text-[11px] font-medium text-[#105e46] hover:text-[#0c4a37] bg-[#ecfdf5] hover:bg-[#d1fae5] border border-[#a7f3d0] px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
               title="在回复前模拟推演对方心理反应与战术润色"
             >
-              <FlaskConical className="w-3 h-3 text-purple-600" />
+              <FlaskConical className="w-3 h-3 text-[#105e46]" />
               <span>沙盒演练</span>
             </button>
           )}
@@ -173,10 +173,10 @@ export const FooterBar: React.FC<FooterBarProps> = ({
                 <button
                   type="button"
                   onClick={() => onOpenSandbox(inputText.trim())}
-                  className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-md text-xs font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+                  className="px-2.5 py-1 bg-[#ecfdf5] hover:bg-[#d1fae5] text-[#105e46] border border-[#a7f3d0] rounded-md text-xs font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
                   title="以此草稿在沙盒中模拟对方反应"
                 >
-                  <FlaskConical className="w-3 h-3 text-purple-600" />
+                  <FlaskConical className="w-3 h-3 text-[#105e46]" />
                   <span>沙盒推演此条</span>
                 </button>
               )}

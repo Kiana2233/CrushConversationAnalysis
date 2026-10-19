@@ -14,6 +14,7 @@ import {
   Download,
   Info,
   ChevronRight,
+  FlaskConical,
 } from "lucide-react";
 import { OverallAnalysis, Message } from "@/types/chat";
 
@@ -112,7 +113,7 @@ export const RightInspectorPanel: React.FC<RightInspectorPanelProps> = ({
           <div className="space-y-1.5 text-[11px]">
             <div className="flex justify-between items-center text-gray-500">
               <span>文字模型</span>
-              <span className="text-gray-800 font-semibold">DeepSeek Chat</span>
+              <span className="text-gray-800 font-semibold">DeepSeek Flash</span>
             </div>
             <div className="flex justify-between items-center text-gray-500">
               <span>推理引擎</span>
@@ -154,9 +155,9 @@ export const RightInspectorPanel: React.FC<RightInspectorPanelProps> = ({
 
             <button
               onClick={onOpenSandbox}
-              className="w-full py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              className="w-full py-2 bg-[#ecfdf5] hover:bg-[#d1fae5] border border-[#a7f3d0] text-[#105e46] rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
             >
-              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+              <FlaskConical className="w-3.5 h-3.5 text-[#105e46]" />
               <span>调起回复沙盒演练</span>
             </button>
           </div>

@@ -564,7 +564,7 @@ export const ReportDocumentView: React.FC<ReportDocumentViewProps> = ({
                 </div>
                 <button
                   onClick={onOpenSandbox}
-                  className="text-[10.5px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 hover:bg-purple-100 cursor-pointer"
+                  className="text-[10.5px] font-semibold text-[#105e46] bg-[#ecfdf5] px-2 py-0.5 rounded border border-[#a7f3d0] hover:bg-[#d1fae5] cursor-pointer transition-colors"
                 >
                   去沙盒实战推演 →
                 </button>

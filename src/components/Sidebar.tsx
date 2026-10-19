@@ -116,9 +116,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={onOpenSandbox}
             title="回复沙盒演练器 (实战对局模拟)"
-            className="w-full py-2.5 rounded-xl flex flex-col items-center justify-center gap-1 text-[10.5px] text-gray-500 hover:text-purple-700 hover:bg-purple-50/70 transition-all cursor-pointer group"
+            className="w-full py-2.5 rounded-xl flex flex-col items-center justify-center gap-1 text-[10.5px] text-gray-500 hover:text-[#105e46] hover:bg-[#ecfdf5] transition-all cursor-pointer group"
           >
-            <FlaskConical className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <FlaskConical className="w-4 h-4 group-hover:scale-110 transition-transform text-gray-500 group-hover:text-[#105e46]" />
             <span>沙盒</span>
           </button>
         </nav>

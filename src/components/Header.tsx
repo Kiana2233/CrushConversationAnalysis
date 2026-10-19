@@ -182,10 +182,10 @@ export const Header: React.FC<HeaderProps> = ({
         {hasMessages && (
           <button
             onClick={onOpenSandbox}
-            className="px-2.5 h-7.5 rounded-lg text-xs font-semibold flex items-center gap-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 transition-all cursor-pointer shadow-2xs"
+            className="px-2.5 h-7.5 rounded-lg text-xs font-semibold flex items-center gap-1 bg-[#ecfdf5] hover:bg-[#d1fae5] text-[#105e46] border border-[#a7f3d0] transition-all cursor-pointer shadow-2xs"
             title="模拟推演对方反应与战术润色"
           >
-            <FlaskConical className="w-3 h-3 text-purple-600" />
+            <FlaskConical className="w-3 h-3 text-[#105e46]" />
             <span className="hidden sm:inline">沙盒推演</span>
           </button>
         )}
