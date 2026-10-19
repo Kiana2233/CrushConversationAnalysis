@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Sidebar } from "@/components/Sidebar";
+import { Sidebar, NavTabType } from "@/components/Sidebar";
 import { SessionList } from "@/components/SessionList";
 import { Header } from "@/components/Header";
 import { ChatMessageList } from "@/components/ChatMessageList";
@@ -11,6 +11,9 @@ import { PasteModal } from "@/components/PasteModal";
 import { AnalysisDetailDrawer } from "@/components/AnalysisDetailDrawer";
 import { MessageDetailModal } from "@/components/MessageDetailModal";
 import { SandboxModal } from "@/components/SandboxModal";
+import { ReportDocumentView } from "@/components/ReportDocumentView";
+import { RightInspectorPanel } from "@/components/RightInspectorPanel";
+import { DataCompassTab } from "@/components/DataCompassTab";
 import { Message, OverallAnalysis, SessionSummary, ChatSession } from "@/types/chat";
 import { parseWechatClipboard, mergeMessagesWithDeduplication } from "@/lib/parser";
 import { ChatScenario } from "@/lib/sample-data";
@@ -31,7 +34,9 @@ export default function Home() {
   // 多会话管理状态 (基于 SQLite)
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [isSessionListOpen, setIsSessionListOpen] = useState<boolean>(false);
+  const [isSessionListOpen, setIsSessionListOpen] = useState<boolean>(true);
+  const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(true);
+  const [activeMainTab, setActiveMainTab] = useState<NavTabType>("report");
 
   // 弹窗状态
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -637,18 +642,20 @@ export default function Home() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#e9e9ea] font-sans antialiased text-[#1c1c1e]">
-      {/* 极简最左侧图标栏 */}
+      {/* 1. 极简 Slim Dock 导航坞 (TraceMemo 风格) */}
       <Sidebar
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onClear={handleClear}
-        hasMessages={messages.length > 0}
-        onAnalyze={() => runAnalysis(messages)}
-        isAnalyzing={isAnalyzing}
+        activeTab={activeMainTab}
+        onChangeTab={setActiveMainTab}
         isSessionListOpen={isSessionListOpen}
         onToggleSessionList={() => setIsSessionListOpen((prev) => !prev)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSandbox={() => handleOpenSandbox()}
+        onAnalyze={() => runAnalysis(messages)}
+        isAnalyzing={isAnalyzing}
+        hasMessages={messages.length > 0}
       />
 
-      {/* 类似 Gemini / ChatGPT 的多会话历史记录栏 (基于 SQLite) */}
+      {/* 2. 档案历史记录管理栏 (TraceMemo 分组列表) */}
       <SessionList
         isOpen={isSessionListOpen}
         onClose={() => setIsSessionListOpen(false)}
@@ -660,9 +667,9 @@ export default function Home() {
         onRenameSession={handleRenameSession}
       />
 
-      {/* 主工作区 */}
-      <main className="flex-1 flex flex-col h-full bg-[#f7f7f8] relative overflow-hidden">
-        {/* 全局 Toast 通知（支持撤销） */}
+      {/* 3. 中间核心工作台 (可切换：全维报告 / 对话记录 / 数据罗盘) */}
+      <main className="flex-1 flex flex-col h-full bg-[#f4f5f7] relative overflow-hidden min-w-0">
+        {/* 全局 Toast 通知 */}
         {notification && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-[#1c1c1e]/95 backdrop-blur-md text-white text-xs px-4 py-2 rounded-full shadow-lg border border-white/10 animate-in fade-in slide-in-from-top-2 duration-200 flex items-center gap-3 select-none">
             <span>{notification.message}</span>
@@ -681,53 +688,100 @@ export default function Home() {
           </div>
         )}
 
-        {/* 顶部状态栏：对方备注、好感度指示条、加号操作 */}
+        {/* 顶部操作与子导航栏 */}
         <Header
           crushName={crushName}
           myName={myName}
           relationshipStatus={relationshipStatus}
           overallAnalysis={overallAnalysis}
           isAnalyzing={isAnalyzing}
+          activeTab={activeMainTab}
+          onChangeTab={setActiveMainTab}
           onOpenPasteModal={() => setIsPasteOpen(true)}
-          onOpenAnalysisDetail={() => setIsDetailDrawerOpen(true)}
+          onOpenSandbox={() => handleOpenSandbox()}
           onChangeCrushName={handleRenameCrush}
           onChangeStatus={setRelationshipStatus}
           onSwapRoles={handleSwapRoles}
+          onAnalyze={() => runAnalysis(messages)}
+          isInspectorOpen={isInspectorOpen}
+          onToggleInspector={() => setIsInspectorOpen((prev) => !prev)}
           hasMessages={messages.length > 0}
           isSelectionMode={isSelectionMode}
           onToggleSelectionMode={handleToggleSelectionMode}
         />
 
-        {/* 聊天消息流：仿原生微信气泡、居中时间戳、微观意图情绪解析、单条/批量删除 */}
-        <ChatMessageList
-          messages={messages}
-          crushName={crushName}
-          isAnalyzing={isAnalyzing}
-          onSelectMessageDetail={(msg) => setSelectedMessage(msg)}
-          onDeleteMessage={handleDeleteMessage}
-          isSelectionMode={isSelectionMode}
-          selectedMessageIds={selectedMessageIds}
-          onToggleSelectMessage={handleToggleSelectMessage}
-          onSelectAll={handleSelectAllMessages}
-          onClearSelection={handleClearSelection}
-          onBatchDelete={handleBatchDelete}
-          onExitSelectionMode={() => {
-            setIsSelectionMode(false);
-            setSelectedMessageIds([]);
-          }}
-          onClearAllMessages={handleClearAllMessages}
-        />
+        {/* 视图分支一：全维纸张式研判报告 (TraceMemo 浮动卡片核心视觉) */}
+        {activeMainTab === "report" && (
+          <ReportDocumentView
+            messages={messages}
+            crushName={crushName}
+            myName={myName}
+            relationshipStatus={relationshipStatus}
+            overallAnalysis={overallAnalysis}
+            onOpenSandbox={() => handleOpenSandbox()}
+            onExportPoster={() => showToast("已生成并保存恋爱研判海报")}
+          />
+        )}
 
-        {/* 底部输入与状态栏：我的发挥、下一步行动、参考回复卡片一键复制、无感粘贴框 */}
-        <FooterBar
-          overallAnalysis={overallAnalysis}
-          isAnalyzing={isAnalyzing}
-          onPasteText={handleImportText}
-          onAnalyze={() => runAnalysis(messages)}
-          onOpenSandbox={handleOpenSandbox}
-          hasMessages={messages.length > 0}
-        />
+        {/* 视图分支二：微信对话记录流 */}
+        {activeMainTab === "chat" && (
+          <div className="flex-1 flex flex-col min-h-0 bg-white">
+            <ChatMessageList
+              messages={messages}
+              crushName={crushName}
+              isAnalyzing={isAnalyzing}
+              onSelectMessageDetail={(msg) => setSelectedMessage(msg)}
+              onDeleteMessage={handleDeleteMessage}
+              isSelectionMode={isSelectionMode}
+              selectedMessageIds={selectedMessageIds}
+              onToggleSelectMessage={handleToggleSelectMessage}
+              onSelectAll={handleSelectAllMessages}
+              onClearSelection={handleClearSelection}
+              onBatchDelete={handleBatchDelete}
+              onExitSelectionMode={() => {
+                setIsSelectionMode(false);
+                setSelectedMessageIds([]);
+              }}
+              onClearAllMessages={handleClearAllMessages}
+            />
+
+            <FooterBar
+              overallAnalysis={overallAnalysis}
+              isAnalyzing={isAnalyzing}
+              onPasteText={handleImportText}
+              onAnalyze={() => runAnalysis(messages)}
+              onOpenSandbox={handleOpenSandbox}
+              hasMessages={messages.length > 0}
+            />
+          </div>
+        )}
+
+        {/* 视图分支三：深度数据罗盘 */}
+        {activeMainTab === "compass" && (
+          <div className="flex-1 overflow-y-auto p-6 flex justify-center bg-[#f4f5f7]">
+            <div className="w-full max-w-xl">
+              <DataCompassTab
+                messages={messages}
+                myName={myName}
+                crushName={crushName}
+                overallAnalysis={overallAnalysis}
+              />
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* 4. 右侧属性与元数据检查器 (TraceMemo 风格) */}
+      <RightInspectorPanel
+        isOpen={isInspectorOpen}
+        onClose={() => setIsInspectorOpen(false)}
+        messages={messages}
+        crushName={crushName}
+        myName={myName}
+        relationshipStatus={relationshipStatus}
+        overallAnalysis={overallAnalysis}
+        onOpenSandbox={() => handleOpenSandbox()}
+      />
 
       {/* 弹窗：导入/粘贴弹窗 */}
       <PasteModal
