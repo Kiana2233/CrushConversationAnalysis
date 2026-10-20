@@ -248,16 +248,31 @@ export const ReportDocumentView: React.FC<ReportDocumentViewProps> = ({
           <path d={areaD} fill="url(#docTimelineGrad)" />
           <path d={pathD} fill="none" stroke="#105e46" strokeWidth="2.5" strokeLinecap="round" />
 
-          {/* 沿情绪曲线流动的光斑气泡 (从第一个节点流动至后续节点) */}
+          {/* 沿情绪曲线流动的呼吸感半透明光斑气泡 (从第一个节点流动至后续节点) */}
           <g pointerEvents="none">
-            {/* 外层微晕光环 */}
-            <circle cx="0" cy="0" r="6" fill="#105e46" opacity="0.25">
-              <animateMotion path={pathD} dur="3.5s" repeatCount="indefinite" />
-            </circle>
-            {/* 核心高亮气泡 */}
-            <circle cx="0" cy="0" r="2.8" fill="#ffffff" stroke="#105e46" strokeWidth="2">
-              <animateMotion path={pathD} dur="3.5s" repeatCount="indefinite" />
-            </circle>
+            <g>
+              <animateMotion path={pathD} dur="4.5s" repeatCount="indefinite" />
+
+              {/* 1. 外层半透明呼吸光晕 (放大至 16px，柔和通透) */}
+              <circle cx="0" cy="0" fill="#105e46">
+                <animate attributeName="r" values="8;16;8" dur="2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.08;0.22;0.08" dur="2s" repeatCount="indefinite" />
+              </circle>
+
+              {/* 2. 气泡本体 (半透明果冻质感，柔和微描边) */}
+              <circle cx="0" cy="0" fill="#105e46" stroke="#105e46">
+                <animate attributeName="r" values="5.5;10;5.5" dur="2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.14;0.28;0.14" dur="2s" repeatCount="indefinite" />
+                <animate attributeName="stroke-width" values="1;1.5;1" dur="2s" repeatCount="indefinite" />
+                <animate attributeName="stroke-opacity" values="0.25;0.45;0.25" dur="2s" repeatCount="indefinite" />
+              </circle>
+
+              {/* 3. 核心温润微光心 (小光核，柔和不突兀) */}
+              <circle cx="0" cy="0" fill="#ffffff">
+                <animate attributeName="r" values="1.8;2.8;1.8" dur="2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.5;0.8;0.5" dur="2s" repeatCount="indefinite" />
+              </circle>
+            </g>
           </g>
 
           {coords.map((c, i) => {
