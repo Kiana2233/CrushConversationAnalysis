@@ -105,15 +105,20 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
 
-            {/* 对调角色按钮 */}
+            {/* 对调角色按钮（研判结果返回前锁定，避免反复触发大模型请求） */}
             {crushName && myName && (
               <button
                 onClick={onSwapRoles}
-                title={`对调身份 (我方: ${myName}, 对方: ${crushName})`}
-                className="text-[10px] text-gray-500 hover:text-[#105e46] bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 px-1.5 py-0.2 rounded flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                disabled={isAnalyzing}
+                title={
+                  isAnalyzing
+                    ? "研判进行中，请等待结果更新后再对调身份"
+                    : `对调身份 (我方: ${myName}, 对方: ${crushName})`
+                }
+                className="text-[10px] text-gray-500 hover:text-[#105e46] bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 px-1.5 py-0.2 rounded flex items-center gap-1 transition-colors cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:bg-gray-50 disabled:hover:border-gray-200"
               >
-                <ArrowLeftRight className="w-2.5 h-2.5" />
-                <span>对调</span>
+                <ArrowLeftRight className={`w-2.5 h-2.5 ${isAnalyzing ? "animate-spin" : ""}`} />
+                <span>{isAnalyzing ? "研判中" : "对调"}</span>
               </button>
             )}
           </div>

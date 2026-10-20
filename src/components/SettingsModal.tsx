@@ -10,6 +10,7 @@ interface SettingsModalProps {
   myName: string;
   crushName: string;
   relationshipStatus: string;
+  isAnalyzing?: boolean;
   onUpdateRoles: (myName: string, crushName: string) => void;
   onChangeStatus: (status: string) => void;
 }
@@ -21,6 +22,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   myName,
   crushName,
   relationshipStatus,
+  isAnalyzing = false,
   onUpdateRoles,
   onChangeStatus,
 }) => {
@@ -71,6 +73,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handleSave = () => {
+    // 研判结果返回前不提交身份切换，避免角色归属与报告视角错位、也避免重复打满大模型接口
+    if (isAnalyzing) return;
     onUpdateRoles(selectedMe, selectedCrush);
     onChangeStatus(selectedStatus);
     setSavedSuccess(true);
@@ -179,6 +183,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Modal Footer */}
         <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
+          {isAnalyzing && (
+            <span className="text-[11px] text-amber-600 mr-auto">研判进行中，暂不可保存身份切换</span>
+          )}
           <button
             onClick={onClose}
             className="px-3.5 py-1.5 text-xs text-gray-600 hover:bg-gray-200/60 rounded-lg transition-colors"
@@ -187,7 +194,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+            disabled={isAnalyzing}
+            title={isAnalyzing ? "请等待当前研判结果返回后再保存" : "保存身份与关系设置"}
+            className="px-4 py-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors flex items-center gap-1 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-emerald-600"
           >
             {savedSuccess ? (
               <>
@@ -195,7 +204,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span>已保存</span>
               </>
             ) : (
-              <span>保存设置</span>
+              <span>{isAnalyzing ? "研判中..." : "保存设置"}</span>
             )}
           </button>
         </div>
