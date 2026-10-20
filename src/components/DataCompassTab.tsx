@@ -245,6 +245,18 @@ export const DataCompassTab: React.FC<DataCompassTabProps> = ({
           <path d={areaD} fill="url(#timelineGrad)" />
           <path d={pathD} fill="none" stroke="#f43f5e" strokeWidth="2.5" strokeLinecap="round" />
 
+          {/* 沿情绪曲线流动的光斑气泡 (从第一个节点流动至后续节点) */}
+          <g pointerEvents="none">
+            {/* 外层微晕光环 */}
+            <circle cx="0" cy="0" r="6" fill="#f43f5e" opacity="0.3">
+              <animateMotion path={pathD} dur="3.5s" repeatCount="indefinite" />
+            </circle>
+            {/* 核心高亮气泡 */}
+            <circle cx="0" cy="0" r="3" fill="#ffffff" stroke="#f43f5e" strokeWidth="2">
+              <animateMotion path={pathD} dur="3.5s" repeatCount="indefinite" />
+            </circle>
+          </g>
+
           {/* 节点点位 */}
           {coords.map((c, i) => {
             const isSelected = selectedMoment?.timeLabel === c.moment.timeLabel;
@@ -258,11 +270,23 @@ export const DataCompassTab: React.FC<DataCompassTabProps> = ({
                   <circle
                     cx={c.x}
                     cy={c.y}
-                    r="8"
+                    r="4"
                     fill="#f43f5e"
-                    opacity="0.2"
-                    className="animate-ping"
-                  />
+                    opacity="0.3"
+                  >
+                    <animate
+                      attributeName="r"
+                      values="4;9;4"
+                      dur="2s"
+                      repeatCount="indefinite"
+                    />
+                    <animate
+                      attributeName="opacity"
+                      values="0.35;0.08;0.35"
+                      dur="2s"
+                      repeatCount="indefinite"
+                    />
+                  </circle>
                 )}
                 <circle
                   cx={c.x}

@@ -248,6 +248,18 @@ export const ReportDocumentView: React.FC<ReportDocumentViewProps> = ({
           <path d={areaD} fill="url(#docTimelineGrad)" />
           <path d={pathD} fill="none" stroke="#105e46" strokeWidth="2.5" strokeLinecap="round" />
 
+          {/* 沿情绪曲线流动的光斑气泡 (从第一个节点流动至后续节点) */}
+          <g pointerEvents="none">
+            {/* 外层微晕光环 */}
+            <circle cx="0" cy="0" r="6" fill="#105e46" opacity="0.25">
+              <animateMotion path={pathD} dur="3.5s" repeatCount="indefinite" />
+            </circle>
+            {/* 核心高亮气泡 */}
+            <circle cx="0" cy="0" r="2.8" fill="#ffffff" stroke="#105e46" strokeWidth="2">
+              <animateMotion path={pathD} dur="3.5s" repeatCount="indefinite" />
+            </circle>
+          </g>
+
           {coords.map((c, i) => {
             const isSelected = selectedMoment?.timeLabel === c.moment.timeLabel;
             return (
@@ -257,7 +269,20 @@ export const ReportDocumentView: React.FC<ReportDocumentViewProps> = ({
                 onClick={() => setSelectedMoment(c.moment)}
               >
                 {c.moment.isHighlight && (
-                  <circle cx={c.x} cy={c.y} r="7" fill="#105e46" opacity="0.2" className="animate-ping" />
+                  <circle cx={c.x} cy={c.y} r="4" fill="#105e46" opacity="0.3">
+                    <animate
+                      attributeName="r"
+                      values="4;9;4"
+                      dur="2s"
+                      repeatCount="indefinite"
+                    />
+                    <animate
+                      attributeName="opacity"
+                      values="0.35;0.08;0.35"
+                      dur="2s"
+                      repeatCount="indefinite"
+                    />
+                  </circle>
                 )}
                 <circle
                   cx={c.x}
